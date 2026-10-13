@@ -1,0 +1,40 @@
+name: Restore complete solo source
+on:
+  push:
+    paths: ['.backup/import-manifest.json']
+permissions:
+  contents: write
+jobs:
+  restore:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - name: Verify and restore the complete source tree
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import hashlib, json, pathlib
+          manifest = json.loads(pathlib.Path('.backup/import-manifest.json').read_text())
+          with open('/tmp/solo-source.bundle', 'wb') as out:
+              for part in manifest['parts']:
+                  out.write(pathlib.Path(part).read_bytes())
+          data = pathlib.Path('/tmp/solo-source.bundle').read_bytes()
+          assert hashlib.sha256(data).hexdigest() == manifest['sha256'], 'Bundle checksum mismatch'
+          assert len(data) == manifest['bytes'], 'Bundle size mismatch'
+          pathlib.Path('/tmp/solo-source-sha').write_text(manifest['commit'])
+          pathlib.Path('/tmp/solo-source-tree').write_text(manifest['tree'])
+          PY
+          git bundle verify /tmp/solo-source.bundle
+          git fetch /tmp/solo-source.bundle 'refs/heads/main:refs/remotes/archive/main'
+          source_sha="$(cat /tmp/solo-source-sha)"
+          test "$(git rev-parse refs/remotes/archive/main)" = "$source_sha"
+          source_tree="$(git rev-parse "$source_sha^{tree}")"
+          test "$source_tree" = "$(cat /tmp/solo-source-tree)"
+          git config user.name "Solo source backup"
+          git config user.email "backup@users.noreply.github.com"
+          restored="$(git commit-tree "$source_tree" -p "$GITHUB_SHA" -m "Preserve full PokéSurvivor solo source and local assets")"
+          git push origin "$restored:refs/heads/main"
+          echo "Restored source tree: $source_tree"
