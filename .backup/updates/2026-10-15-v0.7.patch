@@ -1,0 +1,1965 @@
+diff --git a/QA-NOTES.md b/QA-NOTES.md
+index 2b8d55a..bf67ef9 100644
+--- a/QA-NOTES.md
++++ b/QA-NOTES.md
+@@ -1,5 +1,18 @@
+ # 驗證紀錄
+ 
++## 2026-10-15 共鳴與五種守護夥伴 0.7
++
++`tools/check-resonance.mjs` 通過 7 組：真實單抽／十連、+5 上限與精華溢出、首次／重複異色、
++史詩與低稀有回饋、70 抽與十連保底、非法抽取、指定招募與培養、角色實際戰鬥加成、
++重載／匯入／匯出／舊存檔／拒絕異常資料／合併精華不復活，以及新寵物與追獵者既有動畫。
++`tools/check-expedition.mjs` 擴充至 30 組通過，含五條進化線、冰系護盾不堆疊與真實吸傷、
++暫停／裂隙隔離、蝶系治療距離與雷系多目標減速。
++
++`tools/measure-guardians.mjs` 用真實招式及投射物碰撞量測更新前後的固定靶直接 DPS；
++環境、原始提交及數據列在 `docs/RESONANCE-AND-BALANCE.md`。不將它當作玩家勝率。
++未有 Sites 支援的 browser-control；未啟動瀏覽器或做 iPhone 觸控／完整通關驗收。
++保留既有素材，只檢查新增引用；發布前建置一次並檢查 bundle 語法、來源與發布副本。
++
+ ## 2026-10-15 數字／任務／閃避 0.6
+ 
+ 先修正新增測試區塊與舊檢查的兩個同名變數，再完整執行一次，27 組機制檢查通過。
+diff --git a/README.md b/README.md
+index 6eb8b58..cfbbd4e 100644
+--- a/README.md
++++ b/README.md
+@@ -3,6 +3,17 @@
+ 以 JPTER78 的 PokéSurvivor 為基礎，供個人遊玩的非商業衍生版本。
+ 保留原版戰鬥、美術、角色、招式與成長內容，加入繁體中文、本機進度與單人遠征。
+ 
++## 0.7：重複招募共鳴與五種守護夥伴
++
++重複史詩／傳說現在保留金幣，另提升物種共鳴 +1，最高 +5。
++每階攻擊 +4%、生命 +3%；+3 解鎖冷卻縮短 5%，+5 解鎖移速 +5%。普通／異色共用階級。
++每次重複另得共鳴精華；可在招募頁的「共鳴工坊」指定培養，或招募尚未擁有的史詩／傳說。
++圖鑑顯示階級、加成與培養按鈕。舊存檔可直接沿用，更新前未記錄的重複不追溯補發。
++
++守護模式新增皮丘→雷丘的連鎖控場，以及小山豬→象牙豬的冰系護盾路線。
++依真實戰鬥碰撞量測，補強噴火龍射程與有效輸出，巴大蝶治療改為每 10 秒回復 9%。
++完整規則、來源、比較數據與驗證限制：[docs/RESONANCE-AND-BALANCE.md](docs/RESONANCE-AND-BALANCE.md)。
++
+ ## 0.6：清楚數字、招募懸賞與閃避進化
+ 
+ 數字改用 Arial／系統通用字體，傷害、生命、冷卻、時間與任務進度稍微放大；大數量採千分位逗號。
+diff --git a/css/solo.css b/css/solo.css
+index fec3b2e..d91f19d 100644
+--- a/css/solo.css
++++ b/css/solo.css
+@@ -133,7 +133,7 @@ body { -webkit-font-smoothing: auto; font-variant-numeric: tabular-nums lining-n
+ .guardian-intro > strong { display: flex; align-items: center; gap: 8px; color: #c4f1ce; font-size: 14px; }
+ .guardian-intro p { font-size: 12px; line-height: 1.8; color: #c2d4d9; margin: 10px 0; }
+ .guardian-intro small { font-size: 11px; color: #a5bec9; line-height: 1.7; }
+-.guardian-lines { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
++.guardian-lines { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 8px; }
+ .guardian-lines > div { padding: 8px; border-radius: 7px; background: #00000021; text-align: center; }
+ .guardian-lines b, .guardian-lines small { display: block; }
+ .guardian-lines b { color: var(--exp-color); font-size: 12px; }
+@@ -155,10 +155,27 @@ body { -webkit-font-smoothing: auto; font-variant-numeric: tabular-nums lining-n
+ @media (max-width: 600px) {
+   .guardian-lines { grid-template-columns: 1fr; }
+   .guardian-lines > div { display: grid; grid-template-columns: 190px 1fr; align-items: center; }
+-  .guardian-lines .guardian-stages { grid-row: span 2; }
++  .guardian-lines .guardian-stages { grid-row: span 3; }
+   .guardian-lines b { font-size: 11px; }
+ }
+ 
++/* Compact progression panels keep costs and rewards visible on a phone. */
++.resonance-badge { display: inline-block; padding: 2px 5px; border: 1px solid #e6c67180; border-radius: 5px; color: #ffe394; background: #715a291f; font: 700 .8em system-ui, sans-serif; vertical-align: middle; }
++.resonance-detail, .resonance-workshop { padding: 12px; margin: 12px 0; border: 1px solid #dbc68155; border-radius: 8px; background: #ffd66c0b; text-align: left; }
++.resonance-detail strong, .resonance-workshop summary { color: #ffe394; font-size: 15px; }
++.resonance-detail p, .resonance-workshop p { font-size: 14px; line-height: 1.65; }
++.resonance-detail small, .resonance-workshop small { display: block; font-size: 12px; line-height: 1.7; color: #bbcad5; }
++.resonance-workshop summary { cursor: pointer; min-height: 24px; }
++.resonance-workshop label { display: block; font-size: 14px; margin: 10px 0 5px; }
++.resonance-workshop select { width: 100%; min-width: 0; max-width: 100%; padding: 10px 7px; background: #152331; color: #f0e9d5; border: 1px solid #6b7888; border-radius: 5px; font-size: 16px; }
++.resonance-workshop .btn, #dex-detail .resonance-grow { position: static; margin: 10px 0; width: 100%; font-size: 14px; white-space: normal; }
++.resonance-reward { margin-top: 7px; padding-top: 7px; border-top: 1px solid #e6c67155; font: 12px/1.65 system-ui, sans-serif; color: #dbe8e1; }
++.resonance-reward strong, .resonance-reward span { display: block; }
++.resonance-reward strong { color: #ffe394; }
++.guardian-choices { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
++@media (max-width: 600px) { .guardian-choices { grid-template-columns: 1fr; } }
++@media (max-width: 380px) { .guardian-lines > div { grid-template-columns: 1fr; } .guardian-lines .guardian-stages { grid-row: auto; } }
++
+ /* Clear system numerals; sprite rendering stays nearest-neighbour in canvas. */
+ #game, #slot { image-rendering: auto; }
+ .pill { font-size: 15px; }
+diff --git a/dev.html b/dev.html
+index 23de4d5..57ac367 100644
+--- a/dev.html
++++ b/dev.html
+@@ -458,6 +458,7 @@
+ <script defer src="js/data/starters.js"></script>
+ <script defer src="js/data/enemies.js"></script>
+ <script defer src="js/data/upgrades.js"></script>
++<script defer src="js/systems/resonance.js"></script>
+ <script defer src="js/data/items.js"></script>
+ <script defer src="js/data/missions.js"></script>
+ <script defer src="js/data/achievements.js"></script>
+@@ -506,6 +507,7 @@
+ <script defer src="js/ui/menu.js"></script>
+ <script defer src="js/ui/slots.js"></script>
+ <script defer src="js/ui/gacha-ui.js"></script>
++<script defer src="js/ui/resonance-ui.js"></script>
+ <script defer src="js/ui/run-ui.js"></script>
+ <script defer src="js/ui/social-ui.js"></script>
+ <script defer src="js/ui/ranking-ui.js"></script>
+diff --git a/dist/css/solo.css b/dist/css/solo.css
+index fec3b2e..d91f19d 100644
+--- a/dist/css/solo.css
++++ b/dist/css/solo.css
+@@ -133,7 +133,7 @@ body { -webkit-font-smoothing: auto; font-variant-numeric: tabular-nums lining-n
+ .guardian-intro > strong { display: flex; align-items: center; gap: 8px; color: #c4f1ce; font-size: 14px; }
+ .guardian-intro p { font-size: 12px; line-height: 1.8; color: #c2d4d9; margin: 10px 0; }
+ .guardian-intro small { font-size: 11px; color: #a5bec9; line-height: 1.7; }
+-.guardian-lines { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
++.guardian-lines { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 8px; }
+ .guardian-lines > div { padding: 8px; border-radius: 7px; background: #00000021; text-align: center; }
+ .guardian-lines b, .guardian-lines small { display: block; }
+ .guardian-lines b { color: var(--exp-color); font-size: 12px; }
+@@ -155,10 +155,27 @@ body { -webkit-font-smoothing: auto; font-variant-numeric: tabular-nums lining-n
+ @media (max-width: 600px) {
+   .guardian-lines { grid-template-columns: 1fr; }
+   .guardian-lines > div { display: grid; grid-template-columns: 190px 1fr; align-items: center; }
+-  .guardian-lines .guardian-stages { grid-row: span 2; }
++  .guardian-lines .guardian-stages { grid-row: span 3; }
+   .guardian-lines b { font-size: 11px; }
+ }
+ 
++/* Compact progression panels keep costs and rewards visible on a phone. */
++.resonance-badge { display: inline-block; padding: 2px 5px; border: 1px solid #e6c67180; border-radius: 5px; color: #ffe394; background: #715a291f; font: 700 .8em system-ui, sans-serif; vertical-align: middle; }
++.resonance-detail, .resonance-workshop { padding: 12px; margin: 12px 0; border: 1px solid #dbc68155; border-radius: 8px; background: #ffd66c0b; text-align: left; }
++.resonance-detail strong, .resonance-workshop summary { color: #ffe394; font-size: 15px; }
++.resonance-detail p, .resonance-workshop p { font-size: 14px; line-height: 1.65; }
++.resonance-detail small, .resonance-workshop small { display: block; font-size: 12px; line-height: 1.7; color: #bbcad5; }
++.resonance-workshop summary { cursor: pointer; min-height: 24px; }
++.resonance-workshop label { display: block; font-size: 14px; margin: 10px 0 5px; }
++.resonance-workshop select { width: 100%; min-width: 0; max-width: 100%; padding: 10px 7px; background: #152331; color: #f0e9d5; border: 1px solid #6b7888; border-radius: 5px; font-size: 16px; }
++.resonance-workshop .btn, #dex-detail .resonance-grow { position: static; margin: 10px 0; width: 100%; font-size: 14px; white-space: normal; }
++.resonance-reward { margin-top: 7px; padding-top: 7px; border-top: 1px solid #e6c67155; font: 12px/1.65 system-ui, sans-serif; color: #dbe8e1; }
++.resonance-reward strong, .resonance-reward span { display: block; }
++.resonance-reward strong { color: #ffe394; }
++.guardian-choices { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
++@media (max-width: 600px) { .guardian-choices { grid-template-columns: 1fr; } }
++@media (max-width: 380px) { .guardian-lines > div { grid-template-columns: 1fr; } .guardian-lines .guardian-stages { grid-row: auto; } }
++
+ /* Clear system numerals; sprite rendering stays nearest-neighbour in canvas. */
+ #game, #slot { image-rendering: auto; }
+ .pill { font-size: 15px; }
+diff --git a/dist/index.html b/dist/index.html
+index 52dedcf..687b420 100644
+--- a/dist/index.html
++++ b/dist/index.html
+@@ -434,6 +434,6 @@
+ </section>
+ 
+ <!-- datos generados -->
+-<script defer src="js/game.bundle.js?v=5f964816b82f"></script>
++<script defer src="js/game.bundle.js?v=3c203b04e20d"></script>
+ </body>
+ </html>
+diff --git a/dist/js/game.bundle.js b/dist/js/game.bundle.js
+index 7857104..afc2d90 100644
+--- a/dist/js/game.bundle.js
++++ b/dist/js/game.bundle.js
+@@ -1310,7 +1310,7 @@ if (G.I18n.lang === 'zh-Hant') G.I18n.add({
+   "Tiradas sin legendaria en {x}: {x} / {x}": "{x} 招募未出傳說次數：{x}／{x}",
+   "· A las {x} tiradas sin Legendaria en un banner, la siguiente lo es.": "· 同一地區連續 {x} 次未出傳說，下次必定獲得。",
+   "· La tirada ×10 garantiza al menos una Épica.": "· 十連抽至少保證一隻史詩寶可夢。",
+-  "· Los repetidos dan Pokémonedas (los shiny repetidos, el triple).": "· 重複夥伴轉換為金幣，重複異色可得三倍。",
++  "· Los repetidos dan Pokémonedas (los shiny repetidos, el triple).": "· 重複夥伴保留金幣回饋；史詩／傳說另提升共鳴並累積精華。",
+   "· Los tickets se consiguen jugando: algunos Pokémon los sueltan al caer, y los jefes y los legendarios de las grietas dan tickets ×10.": "· 抽獎券由冒險取得；部分敵人會掉落，首領與裂隙傳說可提供十連抽券。",
+   "Tirar ×1 ·": "招募一次 ·",
+   "Tirar ×10 ·": "招募十次 ·",
+@@ -3307,7 +3307,7 @@ if (G.I18n.lang === 'zh-Hant') G.I18n.add({
+   "Pulls without a legendary in {x}: {x} / {x}": "{x} 招募未出傳說次數：{x}／{x}",
+   "· After {x} pulls without a Legendary on a banner, the next one is.": "· 同一地區連續 {x} 次未出傳說，下次必定獲得。",
+   "· The ×10 pull guarantees at least one Epic.": "· 十連抽至少保證一隻史詩寶可夢。",
+-  "· Duplicates give PokéCoins (shiny duplicates, triple).": "· 重複夥伴轉換為金幣，重複異色可得三倍。",
++  "· Duplicates give PokéCoins (shiny duplicates, triple).": "· 重複夥伴保留金幣回饋；史詩／傳說另提升共鳴並累積精華。",
+   "· Tickets are earned by playing: some Pokémon drop them when defeated, and bosses and rift legendaries give ×10 tickets.": "· 抽獎券由冒險取得；部分敵人會掉落，首領與裂隙傳說可提供十連抽券。",
+   "Pull ×1 ·": "招募一次 ·",
+   "Pull ×10 ·": "招募十次 ·",
+@@ -6008,6 +6008,7 @@ G.DB = (() => {
+       upgrades: {},           // shared permanent upgrades for all solo Pokémon
+       pupg: {},               // dex -> { id -> nivel }: mejoras de cada Pokémon
+       tickets: { t1: 0, t10: 0 },   // tickets del gacha (x1 y x10)
++      resonance: { ranks: {}, essence: 0 }, // bounded duplicate growth, shared by shiny variant
+       pity: {},               // generación del banner -> tiradas sin ★5
+       legends: {},            // dex -> fecha: legendarios vencidos en grietas
+       arenas: {},             // tipo -> fecha: arenas de grieta ganadas
+@@ -6038,6 +6039,7 @@ G.DB = (() => {
+     }
+     if (G.SOLO) G.Upgrades.globalize(s);
+     s.tickets = Object.assign({ t1: 0, t10: 0 }, s.tickets);
++    if (G.SOLO && G.Resonance) G.Resonance.normalize(s);
+     s.v = VERSION;
+     return s;
+   }
+@@ -6069,6 +6071,14 @@ G.DB = (() => {
+       for (const k in older.pupg[d]) mine[k] = Math.max(mine[k] || 0, older.pupg[d][k]);
+     }
+     r.pupgDone = r.pupgDone || older.pupgDone;
++    if (G.SOLO && G.Resonance) {
++      // Rank never decreases; spendable essence follows the newer save, like coins.
++      G.Resonance.normalize(r);
++      for (const d of Object.keys(older.resonance?.ranks || {})) {
++        const n = G.Resonance.rank(older, d);
++        if (n > G.Resonance.rank(r, d)) r.resonance.ranks[d] = n;
++      }
++    }
+     // Lo conseguido nunca se pierde: unión de legendarios, arenas, objetos, logros...
+     for (const coll of ['legends', 'arenas', 'itemsFound', 'evoMoves', 'ach']) {
+       r[coll] = r[coll] || {};
+@@ -6517,6 +6527,7 @@ G.DB = (() => {
+       throw new Error('存檔中的統計資料不正確。');
+     if (s.profile && s.profile.title && !/^[\p{L}\p{N} _.-]{0,80}$/u.test(s.profile.title))
+       throw new Error('存檔中的稱號格式不正確。');
++    if (G.Resonance && !G.Resonance.valid(s)) throw new Error('存檔中的共鳴資料不正確。');
+     s.name = '訓練家';
+     return migrate(s, '訓練家');
+   }
+@@ -8711,6 +8722,70 @@ G.Upgrades = (() => {
+   return { LIST, BY, cost, perks, globalize };
+ })();
+ 
++;
++/* js/systems/resonance.js */
++/* Permanent, species-specific duplicate growth. Normal/shiny share one rank.
++ * Pure save operations: caller commits once after the whole draw/exchange.
++ * No historical copies are inferred from an old save's total pull counter. */
++G.Resonance = (() => {
++  const MAX = 5;
++  const COST = { 4: { grow: 12, recruit: 40 }, 5: { grow: 36, recruit: 120 } };
++  const eligible = dex => [4, 5].includes(G.DEX_BY[dex]?.rarity);
++  const rank = (save, dex) => eligible(dex) && save?.owned?.[dex]
++    ? Math.min(MAX, Math.max(0, Math.floor(Number(save.resonance?.ranks?.[dex]) || 0))) : 0;
++  function normalize(save) {
++    const old = save.resonance;
++    const ranks = {};
++    if (old?.ranks && typeof old.ranks === 'object') for (const dex of Object.keys(old.ranks)) {
++      if (/^\d+$/.test(dex) && eligible(dex) && save.owned?.[dex]) ranks[dex] = rank(save, dex);
++    }
++    save.resonance = { ranks, essence: Number.isSafeInteger(old?.essence) && old.essence >= 0 ? Math.min(1e12, old.essence) : 0 };
++    return save.resonance;
++  }
++  function valid(save) {
++    const r = save.resonance;
++    if (r == null) return true;
++    if (typeof r !== 'object' || Array.isArray(r) || !Number.isSafeInteger(r.essence) || r.essence < 0 || r.essence > 1e12
++      || !r.ranks || typeof r.ranks !== 'object' || Array.isArray(r.ranks)) return false;
++    return Object.entries(r.ranks).every(([dex, n]) => /^\d+$/.test(dex) && eligible(dex) && save.owned?.[dex]
++      && Number.isInteger(n) && n >= 0 && n <= MAX);
++  }
++  function bonus(save, dex) {
++    const n = rank(save, dex);
++    return { rank: n, atk: 1 + n * .04, hp: 1 + n * .03, cd: n >= 3 ? .95 : 1, spd: n >= 5 ? 1.05 : 1 };
++  }
++  function reward(save, dex) {
++    if (!eligible(dex) || !save.owned?.[dex]) return null;
++    const r = normalize(save), before = rank(save, dex), after = Math.min(MAX, before + 1);
++    const essence = (G.DEX_BY[dex].rarity === 5 ? 3 : 1) * (before === MAX ? 3 : 1);
++    r.ranks[dex] = after; r.essence = Math.min(1e12, r.essence + essence);
++    return { before, after, essence, capped: before === MAX };
++  }
++  function offer(save, dex) {
++    if (!eligible(dex) || !G.SPRITE_META[dex]) return null;
++    const owned = !!save.owned?.[dex], n = rank(save, dex);
++    if (owned && n >= MAX) return null;
++    const kind = owned ? 'grow' : 'recruit', cost = COST[G.DEX_BY[dex].rarity][kind];
++    return { kind, cost, next: owned ? n + 1 : 0, affordable: (save.resonance?.essence || 0) >= cost };
++  }
++  function exchange(save, dex) {
++    const o = offer(save, dex);
++    if (!o?.affordable) return null;
++    const r = normalize(save);
++    r.essence -= o.cost;
++    if (o.kind === 'grow') r.ranks[dex] = o.next;
++    else save.owned[dex] = { at: Date.now(), from: 'resonance' };
++    // Spending essence is not a gacha draw: no gold, essence refund or pity change.
++    return o;
++  }
++  function summary(save, dex) {
++    const b = bonus(save, dex);
++    if (!b.rank) return '每階攻擊 +4%、生命 +3%；+3 冷卻縮短 5%，+5 移速 +5%。';
++    return `攻擊 +${b.rank * 4}% · 生命 +${b.rank * 3}%${b.rank >= 3 ? ' · 冷卻 −5%' : ''}${b.rank >= 5 ? ' · 移速 +5%' : ''}`;
++  }
++  return { MAX, COST, eligible, rank, normalize, valid, bonus, reward, offer, exchange, summary };
++})();
++
+ ;
+ /* js/data/items.js */
+ /* ============ items.js — objetos equipables (uno por run) ============
+@@ -12182,7 +12257,7 @@ G.Player = class Player {
+    * @param mon   entrada de G.DEX
+    * @param perks mejoras permanentes ya resueltas (ver data/upgrades.js)
+    */
+-  constructor(mon, perks = {}, shiny = false) {
++  constructor(mon, perks = {}, shiny = false, useResonance = true) {
+     this.mon = mon;
+     this.dex = mon.dex;
+     this.shiny = shiny && G.Sprites.hasShiny(mon.dex);
+@@ -12204,6 +12279,14 @@ G.Player = class Player {
+     this.hp = this.maxHp;
+     this.baseSpd = mon.spd;
+     this.baseAtk = mon.atk;
++    // Companion actors use their own guardian balance and inherit owner attack.
++    if (G.SOLO && useResonance && G.Resonance) {
++      const b = G.Resonance.bonus(G.DB?.save, mon.dex);
++      this.resonanceRank = b.rank;
++      this.baseAtk *= b.atk;
++      this.maxHp = Math.round(this.maxHp * b.hp); this.hp = this.maxHp;
++      this.cdMul *= b.cd; this.spdMul *= b.spd;
++    }
+ 
+     this.moves = [];           // todos los movimientos aprendidos
+     this.slots = [];           // huecos: cada uno, una lista de movimientos que se lanzan a la vez
+@@ -14500,13 +14583,19 @@ G.Guardian = (() => {
+   const LINES = [
+     { id: 'flame', stages: [4, 5, 6], times: [85, 205], color: '#ffa569', icon: 'fist',
+       name: '尾焰的約定', tag: '火力型 · 兩次進化', desc: '小火龍 → 火恐龍 → 噴火龍。成長後以扇形火焰清群，定期爆發熱風。',
+-      move: 'flamethrower', power: 3.4, interval: 1.15, boss: 248, bossName: '岩鎧追獵者', behavior: 'chase', special: 'fire' },
++      move: 'flamethrower', power: 3.8, interval: 1.05, boss: 248, bossName: '岩鎧追獵者', behavior: 'chase', special: 'fire' },
+     { id: 'wings', stages: [10, 11, 12], times: [55, 175], color: '#c4b3ff', icon: 'sprout',
+-      name: '破繭的勇氣', tag: '支援型 · 最快成長', desc: '綠毛蟲 → 鐵甲蛹 → 巴大蝶。進化後發射念力、減速敵人，並週期治療你和夥伴。',
+-      move: 'confusion', power: 3.2, interval: .9, boss: 169, bossName: '夜翼追獵者', behavior: 'charger', special: 'poison' },
++      name: '破繭的勇氣', tag: '支援型 · 最快成長', desc: '綠毛蟲 → 鐵甲蛹 → 巴大蝶。追蹤念力減速敵人；每 10 秒為附近的你回復 9% 生命，夥伴回復 15%。',
++      move: 'confusion', power: 3.2, interval: .9, specialInterval: 10, boss: 169, bossName: '夜翼追獵者', behavior: 'charger', special: 'poison' },
+     { id: 'tide', stages: [129, 130], times: [240], color: '#83cfff', icon: 'shield',
+       name: '逆流成龍', tag: '爆發型 · 耐心換取巨變', desc: '鯉魚王 → 暴鯉龍。需要守護較久，進化後以高壓水炮貫穿敵群，定期掀起震退浪潮。',
+-      move: 'hydro-pump', power: 6.2, interval: 1.55, boss: 405, bossName: '雷牙追獵者', behavior: 'ranged', special: 'electric' }
++      move: 'hydro-pump', power: 6.2, interval: 1.55, boss: 405, bossName: '雷牙追獵者', behavior: 'ranged', special: 'electric' },
++    { id: 'spark', stages: [172, 25, 26], times: [75, 195], color: '#ffe580', icon: 'type:electric',
++      name: '小小電光', tag: '連鎖型 · 分散敵群', desc: '皮丘 → 皮卡丘 → 雷丘。十萬伏特在敵人間跳躍並減速；每 10 秒以放電擊退身旁敵人。單體傷害較低，擅長對付分散敵群。',
++      move: 'thunderbolt', power: 3.3, interval: 1.1, specialInterval: 10, boss: 232, bossName: '重踏追獵者', behavior: 'chase', special: 'ground' },
++    { id: 'frost', stages: [220, 221, 473], times: [95, 220], color: '#a6e6f5', icon: 'shield',
++      name: '雪地裡的依靠', tag: '防護型 · 冰凍陣線', desc: '小山豬 → 長毛豬 → 象牙豬。冰凍光束貫穿並減速；每 12 秒震退近敵，為附近的你補至 12% 生命護盾、夥伴補至 15%。護盾不累加。',
++      move: 'ice-beam', power: 3.5, interval: 1.2, boss: 467, bossName: '熔焰追獵者', behavior: 'ranged', special: 'fire' }
+   ];
+   let s = null;
+   const mature = () => !!s?.pet && s.stage === s.line.stages.length - 1;
+@@ -14514,7 +14603,7 @@ G.Guardian = (() => {
+   function start(options) {
+     s = options.mode === 'guardian' && G.SOLO ? { elapsed: 0, chest: null, opened: false, offered: false,
+       pet: null, line: null, stage: 0, growth: 0, downs: 0, revives: 0, revive: 0, recallCd: 0,
+-      attackCd: 0, specialCd: 10, shots: 0, stuck: 0, wasRift: false,
++      attackCd: 0, specialCd: 10, shots: 0, shield: 0, stuck: 0, wasRift: false,
+       maturedAt: null, grace: 30, warning: null, boss: null, bossSkill: 5, bossPhase: 1,
+       bossDefeated: false, rewarded: false, continued: false, breather: 0 } : null;
+     if (s) G.Sprites.preload(LINES.flatMap(l => [...l.stages, l.boss]));
+@@ -14531,7 +14620,7 @@ G.Guardian = (() => {
+ 
+   function makePet(dex, p, old = null) {
+     const perks = G.Upgrades.perks(G.DB.upgradesOf(dex));
+-    const pet = new G.Player(G.DEX_BY[dex], perks);
++    const pet = new G.Player(G.DEX_BY[dex], perks, false, false);
+     Object.assign(pet, old ? { x: old.x, y: old.y } : safePoint(p, 45, pet.r));
+     pet.maxHp = Math.round(120 + pet.maxHp * (1 + s.stage * .35));
+     pet.hp = pet.maxHp; pet.invuln = 2;
+@@ -14559,7 +14648,9 @@ G.Guardian = (() => {
+     if (!pet || pet.invuln > 0 || !p || p.dead || G.Game.state !== 'playing') return;
+     const nearby = Math.hypot(pet.x - p.x, pet.y - p.y) <= 100;
+     const mult = type ? G.Types.mult(type, pet.mon.types) : 1;
+-    const taken = Math.max(1, damage * mult * (1 - pet.reduction) * (nearby ? .5 : .85));
++    const raw = Math.max(1, damage * mult * (1 - pet.reduction) * (nearby ? .5 : .85));
++    const absorbed = Math.min(s.shield, raw); s.shield -= absorbed;
++    const taken = raw - absorbed;
+     pet.hp = Math.max(0, pet.hp - taken); pet.invuln = .8; pet.flash = .15;
+     G.FX.dmgText(pet.x, pet.y - pet.bodyH - 12, '-' + Math.round(taken), '#ff9c9c');
+     if (!pet.hp) {
+@@ -14588,6 +14679,10 @@ G.Guardian = (() => {
+       s.maturedAt = s.elapsed; s.grace = 30; s.pet.tag = '並肩作戰';
+       const move = G.Moves.instance(s.line.move, 3);
+       if (s.line.id === 'wings') { move.slow = .4; move.pierce = 2; }
++      // Short cone formerly lost most hits by distance 180. Keep a fan, with
++      // enough flight time to cover the guardian's fighting position.
++      if (s.line.id === 'flame') { move.life *= 1.65; move.arc = .72; }
++      if (s.line.id === 'spark') move.slow = .35;
+       s.pet.moves = [move]; s.pet.slots = [[move]]; s.pet.active = 0;
+       G.Spawner.say(`${s.pet.mon.name} 已經能保護你了！先享受並肩作戰的力量。`, 4, true);
+     } else {
+@@ -14627,16 +14722,30 @@ G.Guardian = (() => {
+       }
+     }
+     if (s.specialCd > 0) return;
+-    s.specialCd = 12;
++    s.specialCd = s.line.specialInterval || 12;
+     if (s.line.id === 'wings') {
+-      if (Math.hypot(p.x - pet.x, p.y - pet.y) < 220) { p.heal(p.maxHp * .07); pet.heal(pet.maxHp * .12); }
++      if (Math.hypot(p.x - pet.x, p.y - pet.y) < 220) { p.heal(p.maxHp * .09); pet.heal(pet.maxHp * .15); }
+       G.FX.ring(pet.x, pet.y, 8, 150, '#a4edc1', .6, 4);
+     } else if (s.line.id === 'flame') G.Combat.assist(pet, G.Moves.instance('heat-wave', 3), 3.5);
+-    else {
++    else if (s.line.id === 'tide') {
++      // Preserve the existing neutral wave damage; record it alongside beams.
+       G.FX.ring(pet.x, pet.y, 8, 170, '#88d6ff', .55, 5);
+       for (const e of G.EnemyMgr.queryCircle(pet.x, pet.y, 170)) {
+         if (e.dead) continue;
+-        e.hurt(70 * p.atk, '#88d6ff', e.x - pet.x, e.y - pet.y, 180); e.applySlow(.5, 2);
++        const damage = 70 * p.atk;
++        e.hurt(damage, '#88d6ff', e.x - pet.x, e.y - pet.y, 180); e.applySlow(.5, 2);
++        p.dmgDealt += damage; p.onDealt(damage);
++      }
++    } else if (s.line.id === 'spark') {
++      const wave = Object.assign(G.Moves.instance('discharge', 1), { radius: 150, dmg: 30, slow: .55, knock: 120 });
++      G.Combat.assist(pet, wave, 1);
++    } else if (s.line.id === 'frost') {
++      const wave = Object.assign(G.Moves.instance('powder-snow', 1), { radius: 150, dmg: 25, slow: .65, knock: 150 });
++      G.Combat.assist(pet, wave, 1);
++      if (Math.hypot(p.x - pet.x, p.y - pet.y) < 220) {
++        if (G.Expedition?.run) G.Expedition.run.shield = Math.max(G.Expedition.run.shield, p.maxHp * .12);
++        s.shield = Math.max(s.shield, pet.maxHp * .15);
++        G.FX.ring(p.x, p.y, 10, 65, s.line.color, .6, 4);
+       }
+     }
+   }
+@@ -14765,7 +14874,7 @@ G.Guardian = (() => {
+  *   - la tirada ×10 trae al menos un 4★ o superior
+  *   - a las 70 tiradas sin 5★ en ese banner, el siguiente es 5★ seguro
+  * Shiny: 1 de cada 100 tiradas sale en su versión shiny.
+- * Repetidos: se convierten en Pokémonedas (los shiny repetidos, el triple).
++ * Duplicates retain coins; solo epic/legendary species also gain Resonance.
+  *
+  * Se tira con TICKETS (se consiguen jugando):
+  *   ×1   1 ticket
+@@ -14775,6 +14884,7 @@ G.Gacha = (() => {
+   /** ¿Qué gasta una tirada de n? → { t1, t10 } o null si no te llega. */
+   /** @param use  't1' (tickets normales) o 't10' (un ticket ×10, sólo para la ×10) */
+   function costOf(save, n, use = 't1') {
++    if (![1, 10].includes(n) || !['t1', 't10'].includes(use) || (use === 't10' && n !== 10)) return null;
+     const t = save.tickets || { t1: 0, t10: 0 };
+     if (n === 10 && use === 't10') return t.t10 >= 1 ? { t1: 0, t10: 1 } : null;
+     return t.t1 >= n ? { t1: n, t10: 0 } : null;
+@@ -14836,6 +14946,7 @@ G.Gacha = (() => {
+    *   { dex, rarity, shiny, isNew, refund }
+    */
+   function pull(save, n, gen = 1, use = 't1') {
++    if (!Number.isInteger(gen) || !BANNERS.some(b => b.gen === gen)) return null;
+     const cost = costOf(save, n, use);
+     if (!cost) return null;
+     save.tickets.t1 -= cost.t1;
+@@ -14857,6 +14968,7 @@ G.Gacha = (() => {
+       const mon = G.U.pick(list);
+       const shiny = G.Sprites.hasShiny(mon.dex) && (forceShiny > 0 ? (forceShiny--, true) : Math.random() < SHINY_RATE);
+ 
++      const ownedBefore = !!save.owned[mon.dex];
+       let isNew = false, refund = 0;
+       if (shiny) {
+         isNew = !save.shiny[mon.dex];
+@@ -14869,7 +14981,8 @@ G.Gacha = (() => {
+         else refund = REFUND[rarity];
+       }
+       save.coins += refund;
+-      out.push({ dex: mon.dex, rarity, shiny, isNew, refund });
++      const resonance = G.SOLO && ownedBefore ? G.Resonance.reward(save, mon.dex) : null;
++      out.push({ dex: mon.dex, rarity, shiny, isNew, refund, resonance });
+     }
+     save.stats.pulls = (save.stats.pulls || 0) + n;
+     return out;
+@@ -19343,7 +19456,7 @@ G.MenuUI = (() => {
+     G.UI.sprite($('menu-partner'), mon.dex, { lively: true, scale: 4, hero: true, shiny });
+     $('menu-partner').style.setProperty('--stage-c', shiny ? '#9ae6ff' : G.U.TYPE_COLOR[mon.types[0]]);
+     $('menu-partner').classList.toggle('shiny', shiny);
+-    $('menu-partner-name').innerHTML = mon.name + (shiny ? ' ' + G.Icons.html('shiny', 24) : '');
++    $('menu-partner-name').innerHTML = mon.name + G.ResonanceUI.badge(mon.dex) + (shiny ? ' ' + G.Icons.html('shiny', 24) : '');
+     $('menu-partner-info').innerHTML = G.UI.typeChips(mon.types) + ' ' + G.UI.stars(mon.rarity);
+ 
+     const owned = Object.keys(s.owned).filter(d => G.DEX_BY[d]).length;
+@@ -19446,7 +19559,7 @@ G.MenuUI = (() => {
+       else if (sh) cell.insertAdjacentHTML('beforeend', `<span class="badge-r" title="Tienes su shiny">${G.Icons.html('shiny', 12)}</span>`);
+       const useShiny = sh && p.dex === s.partner && s.partnerShiny;
+       cell.appendChild(G.UI.spriteCanvas(p.dex, 92, 80, { scale: 2, silhouette: !own, shadow: own, shiny: useShiny }));
+-      cell.insertAdjacentHTML('beforeend', `<b>${own ? p.name : '???'}</b>${G.UI.stars(p.rarity, 9)}`);
++      cell.insertAdjacentHTML('beforeend', `<b>${own ? p.name + G.ResonanceUI.badge(p.dex) : '???'}</b>${G.UI.stars(p.rarity, 9)}`);
+       cell.onclick = () => {
+         dexSel = p.dex;
+         grid.querySelectorAll('.cell').forEach(c => c.classList.remove('on'));
+@@ -19484,11 +19597,13 @@ G.MenuUI = (() => {
+           <button class="${viewShiny ? 'on' : ''}" data-v="1">${G.Icons.html('shiny', 12)} Shiny</button></div>` : ''}
+       <div class="center">
+         <div style="color:var(--muted);font-size:13px">Nº ${String(p.dex).padStart(3, '0')} · ${GEN_NAMES[p.gen - 1]}</div>
+-        <h3>${own ? p.name : '???'}</h3>
++        <h3>${own ? p.name + G.ResonanceUI.badge(dex) : '???'}</h3>
+         <div style="color:${G.Gacha.RARITY_COLOR[p.rarity]}">${G.UI.stars(p.rarity, 24)} ${G.Gacha.RARITY_NAME[p.rarity]}</div>
+         <div style="margin:6px 0">${own ? G.UI.typeChips(p.types) : ''}</div>
+       </div>
+       ${own ? `
++        ${G.ResonanceUI.detail(dex)}
++        <small>以下為基礎數值（共鳴加成另計）</small>
+         ${bar('Vida', p.hp, max.hp, p.hp)}
+         ${bar('Ataque', p.atk, max.atk, '×' + p.atk.toFixed(2))}
+         ${bar('Velocidad', p.spd, max.spd, p.spd)}
+@@ -19507,6 +19622,7 @@ G.MenuUI = (() => {
+     box.querySelectorAll('.seg button').forEach(b => {
+       b.onclick = () => { viewShiny = b.dataset.v === '1'; showDetail(dex); };
+     });
++    G.ResonanceUI.bindDetail(box, () => { renderGrid(); showDetail(dex); });
+     const pick = $('dex-pick');
+     if (pick) pick.onclick = () => {
+       s.partner = dex;
+@@ -19913,9 +20029,12 @@ G.GachaUI = (() => {
+       `<div><span>${G.Icons.html('shiny', 12)} Shiny</span><span>1%</span></div>
+        <p class="note">· La tirada ×10 garantiza al menos una Épica.<br>
+        · A las ${G.Gacha.PITY_5} tiradas sin Legendaria en un banner, la siguiente lo es.<br>
+-       · Los repetidos dan Pokémonedas (los shiny repetidos, el triple).<br>
++       · 重複夥伴保留金幣回饋；史詩／傳說另升共鳴 +1，最高 +5。<br>
++       · 每次重複史詩／傳說另得 1／3 精華；已滿階改得 3／9。普通與異色共用升階。<br>
++       · 首次異色仍會解鎖；若已擁有同種普通版本，同時獲得共鳴回饋。<br>
+        · Los tickets se consiguen jugando: algunos Pokémon los sueltan al caer, y
+-         los jefes y los legendarios de las grietas dan tickets ×10.</p>`;
++         los jefes y los legendarios de las grietas dan tickets ×10.</p>` + G.ResonanceUI.workshop();
++    G.ResonanceUI.bindWorkshop(refresh);
+ 
+     const t = s.tickets;
+     $('cost-1').innerHTML = `${G.Icons.html('ticket', 18)} 1`;
+@@ -19960,7 +20079,7 @@ G.GachaUI = (() => {
+       const tag = r.isNew
+         ? `<span class="new">${r.shiny ? '¡SHINY NUEVO!' : '¡NUEVO!'}</span>`
+         : `Repetido · <span class="coin"></span> +${r.refund}`;
+-      c.insertAdjacentHTML('beforeend', `<b>${r.shiny ? G.Icons.html('shiny', 12) + ' ' : ''}${mon.name}</b><div class="tag">${tag}</div>`);
++      c.insertAdjacentHTML('beforeend', `<b>${r.shiny ? G.Icons.html('shiny', 12) + ' ' : ''}${mon.name}</b><div class="tag">${tag}</div>${G.ResonanceUI.reward(r)}`);
+       out.appendChild(c);
+       G.Audio.sfx('reveal', { rarity: r.rarity });
+       await wait(n === 10 ? 150 : 0);
+@@ -19977,6 +20096,67 @@ G.GachaUI = (() => {
+   return { init, open, get open_() { return !$('pull-fx').classList.contains('hidden'); } };
+ })();
+ 
++;
++/* js/ui/resonance-ui.js */
++/* Visible progression and a deterministic alternative to waiting for one dupe. */
++G.ResonanceUI = (() => {
++  let selected = 0;
++  const R = () => G.Resonance;
++  function badge(dex) {
++    const n = R().rank(G.DB.save, dex);
++    return n ? ` <span class="resonance-badge" title="共鳴升階 +${n}">+${n}</span>` : '';
++  }
++  function detail(dex) {
++    if (!R().eligible(dex)) return '';
++    const s = G.DB.save, n = R().rank(s, dex), o = R().offer(s, dex);
++    return `<div class="resonance-detail"><strong>共鳴 +${n} / +${R().MAX}</strong><p>${R().summary(s,dex)}</p><small>普通／異色共用；加成用於你操作這隻寶可夢時。${n < 3 ? '+3 解鎖冷卻縮短 5%。' : n < 5 ? '+5 解鎖移速 +5%。' : '已滿階，再次重複可獲得更多精華。'}</small>${o ? `<button type="button" class="btn small resonance-grow" data-grow="${dex}" ${o.affordable ? '' : 'disabled'}>培養至 +${o.next} · ${o.cost} 精華</button>` : ''}<small>持有共鳴精華：${s.resonance?.essence || 0}</small></div>`;
++  }
++  function bindDetail(box, refresh) {
++    const button = box.querySelector('[data-grow]');
++    if (button) button.onclick = () => {
++      const result = R().exchange(G.DB.save, Number(button.dataset.grow));
++      if (!result) return;
++      G.DB.commit(true); G.Audio.sfx('legend'); refresh();
++    };
++  }
++  function workshop() {
++    const s = G.DB.save;
++    const pool = G.DEX.filter(p => R().offer(s, p.dex));
++    if (!pool.some(p => p.dex === selected)) selected = pool.find(p => p.dex === s.partner)?.dex || pool[0]?.dex || 0;
++    return `<details class="resonance-workshop"><summary>共鳴工坊 · 精華 ${s.resonance?.essence || 0}</summary><p>重複史詩、傳說都能累積精華。你可以指定培養，也可以存起來招募尚未擁有的夥伴。</p><label for="resonance-target">選擇目標（所有世代）</label><select id="resonance-target">${pool.map(p => {
++      const o = R().offer(s,p.dex);
++      return `<option value="${p.dex}" ${selected === p.dex ? 'selected' : ''}>${p.rarity === 5 ? '傳說' : '史詩'} · ${p.name} · ${o.kind === 'grow' ? '培養 +' + o.next : '首次招募'} · ${o.cost} 精華</option>`;
++    }).join('')}</select><p id="resonance-preview" aria-live="polite"></p><button type="button" class="btn gold" id="resonance-exchange">指定培養／招募</button><small>培養：史詩 12／傳說 36；首次招募：史詩 40／傳說 120。招募得到普通版本，從 +0 開始。兌換不消耗招募券、不影響保底。</small></details>`;
++  }
++  function bindWorkshop(refresh) {
++    const select = document.getElementById('resonance-target'), button = document.getElementById('resonance-exchange');
++    if (!select || !button) return;
++    const update = () => {
++      selected = Number(select.value);
++      const s = G.DB.save, o = R().offer(s,selected);
++      document.getElementById('resonance-preview').textContent = !o ? '所有史詩與傳說都已滿階！精華會繼續保留。' : `${G.DEX_BY[selected].name} · ${o.kind === 'grow' ? '共鳴 +' + R().rank(s,selected) + ' → +' + o.next : '加入收藏（普通版本）'}${o.affordable ? '' : ` · 還差 ${o.cost - (s.resonance?.essence || 0)} 精華`}`;
++      button.disabled = !o?.affordable;
++      button.textContent = o ? `${o.kind === 'grow' ? '培養至 +' + o.next : '招募 ' + G.DEX_BY[selected].name} · ${o.cost} 精華` : '已全部滿階';
++    };
++    select.onchange = update; update();
++    button.onclick = () => {
++      // Re-read cost/rank at click time, then commit before refreshing the UI.
++      const result = R().exchange(G.DB.save,selected);
++      if (!result) { update(); return; }
++      G.Progress.checkAch(); G.DB.commit(true); G.Audio.sfx('legend');
++      G.UI.toast(`${G.DEX_BY[selected].name}${result.kind === 'grow' ? ' 共鳴 +' + result.next : ' 已加入收藏'}`);
++      refresh(); document.querySelector('.resonance-workshop').open = true;
++    };
++  }
++  function reward(r) {
++    if (!r.resonance) return '';
++    const a = r.resonance;
++    const milestone = a.after !== a.before && a.after === 3 ? '冷卻 −5% 解鎖' : a.after !== a.before && a.after === 5 ? '移速 +5% 解鎖' : '';
++    return `<div class="resonance-reward"><strong>${a.capped ? '共鳴 +5 · 滿階回饋' : `共鳴 +${a.before} → +${a.after}`}</strong>${a.capped ? '' : '<span>攻擊 +4% · 生命 +3%</span>'}${milestone ? `<span>${milestone}</span>` : ''}<span>共鳴精華 +${a.essence}</span></div>`;
++  }
++  return { badge, detail, bindDetail, workshop, bindWorkshop, reward };
++})();
++
+ ;
+ /* js/ui/run-ui.js */
+ /* ============ run-ui.js — cartas de nivel, pausa y fin de run ============ */
+@@ -22114,7 +22294,7 @@ G.GuardianUI = (() => {
+     box.querySelectorAll('[data-guardian-dex]').forEach(el => el.appendChild(G.UI.spriteCanvas(Number(el.dataset.guardianDex), 58, 54, { lively: true, scale: 1.5 })));
+   }
+   function prepare() {
+-    return `<div class="guardian-intro"><strong>${G.Icons.html('heart', 20)} 這次，有一位夥伴等你帶回家。</strong><p>01:00 出現守護寶箱。救出幼體，待在牠身邊累積成長；完全進化後，牠會開始保護你。迎戰追獵者，讓整條進化系加入收藏。</p><div class="guardian-lines">${G.Guardian.LINES.map(l => `<div style="--exp-color:${l.color}">${stages(l)}<b>${l.name}</b><small>守護 ${clock(l.times.at(-1))} 成為完全體${G.DB.save.stats['guardianBond_' + l.id] ? ' · 已締結羈絆' : ''}</small></div>`).join('')}</div><p class="note">倒下不會永久失去夥伴；靠近守住 3 秒即可救起。按 G／召回按鈕可帶牠回到身邊，冷卻 14 秒。遠離、倒下或進入裂隙時，成長暫停。</p></div>`;
++    return `<div class="guardian-intro"><strong>${G.Icons.html('heart', 20)} 這次，有一位夥伴等你帶回家。</strong><p>01:00 出現守護寶箱。救出幼體，待在牠身邊累積成長；完全進化後，牠會開始保護你。迎戰追獵者，讓整條進化系加入收藏。</p><div class="guardian-lines">${G.Guardian.LINES.map(l => `<div style="--exp-color:${l.color}">${stages(l)}<b>${l.name}</b><small>${l.tag}</small><small>守護 ${clock(l.times.at(-1))} 成為完全體${G.DB.save.stats['guardianBond_' + l.id] ? ' · 已締結羈絆' : ''}</small></div>`).join('')}</div><p class="note">倒下不會永久失去夥伴；靠近守住 3 秒即可救起。按 G／召回按鈕可帶牠回到身邊，冷卻 14 秒。遠離、倒下或進入裂隙時，成長暫停。</p></div>`;
+   }
+   function choice(type, list) {
+     if (type === 'guardian') return `<p class="exp-eyebrow">A PROMISE TO PROTECT / 守護的約定</p><h2>牠還很弱小，但牠相信你。</h2><p class="sub">選一位同行夥伴。幼體不攻擊；守住這段成長時間，見證牠的蛻變。戰鬥已暫停。</p><div class="exp-relic-grid guardian-choices">${list.map((l, i) => `<button class="exp-relic" data-choice="${i}" style="--exp-color:${l.color}"><span class="exp-relic-top">${stages(l)}<kbd>${i + 1}</kbd></span><small>${l.tag}</small><h3>${l.name}</h3><p>${l.desc}</p><span class="guardian-growth">${l.times.map((t, n) => `${clock(t)} ${G.DEX_BY[l.stages[n + 1]].name}`).join(' · ')}</span><span class="exp-take">我會保護你 →</span></button>`).join('')}</div><p class="note">牠在你 220 範圍內才會成長。靠近可減少牠受到的傷害；G 召回也能回復 18% 夥伴生命。全隊永久強化同樣適用。</p>`;
+@@ -22141,7 +22321,7 @@ G.GuardianUI = (() => {
+     ctx.fillStyle = '#e8e1c8';
+     if (pet) {
+       const dead = pet.dead;
+-      ctx.fillText(dead ? `救援 ${s.revive.toFixed(1)} / 3 秒` : `生命 ${Math.ceil(pet.hp)} / ${pet.maxHp}`, x, y + 16, width - 90);
++      ctx.fillText(dead ? `救援 ${s.revive.toFixed(1)} / 3 秒` : `生命 ${Math.ceil(pet.hp)} / ${pet.maxHp}${s.shield > 0 ? ' · 盾 ' + Math.ceil(s.shield) : ''}`, x, y + 16, width - 90);
+       ctx.fillStyle = '#384550'; ctx.fillRect(x, y + 21, width - 90, 4);
+       ctx.fillStyle = dead ? '#ffd596' : s.line.color; ctx.fillRect(x, y + 21, (width - 90) * Math.min(1, dead ? s.revive / 3 : pet.hp / pet.maxHp), 4);
+       ctx.fillStyle = '#c9deed';
+@@ -22162,7 +22342,7 @@ G.GuardianUI = (() => {
+         text = s.chest.open > 0 ? `開啟中 ${s.chest.open.toFixed(1)} / 3 秒` : `守護寶箱在${dir} · 靠近停留 3 秒`;
+       }
+       ctx.fillText(text, x, y + 20, width - 12);
+-      ctx.fillStyle = '#a5bbc8'; ctx.fillText('小火龍 / 綠毛蟲 / 鯉魚王', x, y + 39, width - 12);
++      ctx.fillStyle = '#a5bbc8'; ctx.fillText('5 位夥伴 · 火力 / 治療 / 爆發 / 連鎖 / 防護', x, y + 39, width - 12);
+     }
+     ctx.fillStyle = '#f5d991'; ctx.fillText(goal(s), x, y + 57, width - 12);
+     const trial = G.ExpeditionTrials.state.active, c = r.contract;
+@@ -22210,7 +22390,7 @@ G.ExpeditionUI = (() => {
+     if (!known.some(r => r.id === options.focus)) options.focus = '';
+     box.innerHTML = `<div class="exp-heading"><div><p class="exp-eyebrow">SOLO EXPEDITION / 單人遠征</p><h2>下一段冒險，由你出發</h2><p class="sub">選擇作戰風格，讓這一局走出不同的路。</p></div><div id="exp-partner"></div></div>
+       <div class="exp-record"><span>遠征通關 <b>${s.stats.expeditionWins || 0}</b></span><span>最佳評分 <b>${s.stats.expeditionBest || 0}</b></span><span>遺物圖鑑 <b>${known.length}/12</b></span></div>
+-      <div class="exp-mastery"><div><strong>${G.DEX_BY[s.partner].name} · ${mastery.name} ${'★'.repeat(mastery.rank)}</strong><small>${mastery.next ? `熟練度 ${mastery.xp} / ${mastery.next} · 升階獎勵 120 金幣` : '已達最高熟練階級'} · 本局遺物重選 ${1 + Math.min(2, mastery.rank)} 次</small></div><progress aria-label="夥伴熟練度" max="${mastery.next ? mastery.next - mastery.base : 1}" value="${mastery.next ? mastery.xp - mastery.base : 1}"></progress></div>
++      <div class="exp-mastery"><div><strong>${G.DEX_BY[s.partner].name}${G.ResonanceUI.badge(s.partner)} · ${mastery.name} ${'★'.repeat(mastery.rank)}</strong><small>${mastery.next ? `熟練度 ${mastery.xp} / ${mastery.next} · 升階獎勵 120 金幣` : '已達最高熟練階級'} · 本局遺物重選 ${1 + Math.min(2, mastery.rank)} 次</small></div><progress aria-label="夥伴熟練度" max="${mastery.next ? mastery.next - mastery.base : 1}" value="${mastery.next ? mastery.xp - mastery.base : 1}"></progress></div>
+       <h3 class="exp-label">01 / 冒險方式</h3><div class="exp-options exp-modes">
+       ${optionButton('mode', 'guardian', '守護夥伴', '從弱小幼體到並肩作戰。救出夥伴、陪牠進化，再一起擊敗追獵者。', 'heart', '#afe4bd')}
+       ${optionButton('mode', 'expedition', '十二分鐘遠征', '遺物、途中委託、閃避與清場大絕。擊敗 12:00 出現的最終首領，即可領獎撤離或繼續生存。')}
+@@ -22325,7 +22505,7 @@ G.ExpeditionUI = (() => {
+     } else if (kind === 'prepare') {
+       if (G.Input.tap('escape')) G.Flow.goMenu();
+     } else {
+-      for (let i = 0; i < (kind === 'dash' ? 4 : 3); i++) if (G.Input.tap('digit' + (i + 1)) || G.Input.tap('numpad' + (i + 1))) pick(i);
++      for (let i = 0; i < (kind === 'clear' ? 2 : offered.length); i++) if (G.Input.tap('digit' + (i + 1)) || G.Input.tap('numpad' + (i + 1))) pick(i);
+       if (G.Input.tap('keyr')) reroll();
+     }
+     return true;
+diff --git a/docs/GUARDIAN.md b/docs/GUARDIAN.md
+index bb3f26e..0fc47ff 100644
+--- a/docs/GUARDIAN.md
++++ b/docs/GUARDIAN.md
+@@ -1,3 +1,5 @@
++> 0.7 已增加雷丘、象牙豬兩條路線並更新平衡，請以 [共鳴與平衡規則](RESONANCE-AND-BALANCE.md) 為最新數值；以下保留 0.5 的基礎機制說明。
++
+ # 守護夥伴模式（0.5）
+ 
+ 本模式加在現有單人遠征之上，使用相同地圖、敵人、遺物、委託、永久強化與大絕。
+diff --git a/docs/RESONANCE-AND-BALANCE.md b/docs/RESONANCE-AND-BALANCE.md
+new file mode 100644
+index 0000000..3288d00
+--- /dev/null
++++ b/docs/RESONANCE-AND-BALANCE.md
+@@ -0,0 +1,94 @@
++# 0.7：重複招募成長與五種守護路線
++
++## 設計目的
++
++讓重複史詩／傳說同時帶來「這隻變強」與「朝指定收藏前進」兩種進展。
++保持首次取得即可完整操作角色；沒有把原有招式鎖在重複抽取後面。
++所有守護路線都使用已有的本地動畫與真實招式執行器，沒有新增素材下載依賴。
++
++參考的是機制，而非複製他作程式或資產：
++
++- [Pokémon Masters EX 官方更新](https://pokemonmasters-game.com/en-US/announcements/Update_2040_1W_1)：重複拍組提升招式等級，滿級後轉為潛能提升道具。
++- [HoYoverse 官方說明](https://support.hoyoverse.com/hc/en-us/articles/52089402385945-What-rewards-do-I-get-for-obtaining-a-duplicate-character-near-or-at-C6)：重複角色提供命之座材料與星輝，滿階後提供其他回饋。
++- 本版採自己的 +5 上限與精華價格，不照搬商業轉蛋的付費設計。本遊戲招募券仍由遊玩取得。
++
++## 共鳴規則
++
++| 事件 | 成長 | 精華 | 金幣 |
++| --- | --- | --- | --- |
++| 首次取得物種 | +0，加入收藏 | 0 | 原規則 |
++| 重複史詩，尚未 +5 | +1 階 | 1 | 原本的 120（重複異色 360） |
++| 重複傳說，尚未 +5 | +1 階 | 3 | 原本的 300（重複異色 900） |
++| 已 +5 史詩再次重複 | 維持 +5 | 3 | 保留 |
++| 已 +5 傳說再次重複 | 維持 +5 | 9 | 保留 |
++
++普通與異色共用物種階級。已擁有普通版時，第一次抽到異色仍解鎖異色，同時提升共鳴；
++這個首次異色沒有原版「重複異色金幣」，不將它誤算為三倍金幣。
++同一次十連裡的重複逐隻入帳，結果卡保存每次的前後階級。
++
++- 每階攻擊 +4%、起始生命 +3%，+5 時分別 +20%、+15%。
++- +3 額外將招式冷卻乘 0.95；+5 額外移速 +5%。
++- 這是操控角色的物種成長，經典／遠征／守護模式出戰都適用。
++- 守護寵物原本以操控角色攻擊為基礎；不再重套一次寵物自身的共鳴，避免乘算兩次。
++- 共鳴與全隊金幣強化、遠征熟練度是不同系統，原進度保留。
++
++工坊位於「招募夥伴」機率說明下方，也可在已擁有角色的圖鑑詳情直接培養。
++
++| 用途 | 史詩精華費用 | 傳說精華費用 |
++| --- | ---: | ---: |
++| 指定已擁有角色提升一階 | 12 | 36 |
++| 招募未擁有物種（普通版 +0） | 40 | 120 |
++
++兌換不影響招募保底、不消耗招募券，也不會產生金幣或精華返還循環。
++原 70 抽傳說保底、十連至少史詩與機率不變。非法數量、世代或付款方式不扣券。
++
++## 守護路線
++
++| 路線 | 完全體所需守護秒數 | 定位與差異 |
++| --- | ---: | --- |
++| 小火龍→火恐龍→噴火龍 | 205 | 延長火焰飛行時間 65%、扇形 0.9→0.72；助戰威力 3.4→3.8、間隔 1.15→1.05 秒。強化近中距離火力。 |
++| 綠毛蟲→鐵甲蛹→巴大蝶 | 175 | 保留最快成長與追蹤減速；治療由每 12 秒玩家 7%／寵物 12%，改每 10 秒 9%／15%，限靠近 220 範圍。 |
++| 鯉魚王→暴鯉龍 | 240 | 保留最長守護換取高壓水炮與震退浪潮；數值不變，補計浪潮傷害統計與命中回呼。 |
++| 皮丘→皮卡丘→雷丘（新增） | 195 | 六目標連鎖十萬伏特、減速；10 秒一次近身放電與擊退，擅長分散敵群。追獵者為頓甲。 |
++| 小山豬→長毛豬→象牙豬（新增） | 220 | 冰凍光束貫穿減速；12 秒一次震退粉雪，附近玩家護盾補至生命 12%、寵物補至 15%，不堆疊、不覆蓋更高護盾。追獵者為鴨嘴炎獸。 |
++
++五條路線共用原本的幼體守護、進化、救援、召回、追獵者、收藏與一次性結算流程。
++新增第四、第五選項可點選，也可按數字鍵 4、5。
++
++## 量測證據與限制
++
++基線來源提交：`c87d4972776f9b7064813040972a8ab0f1dedad0`。
++`node tools/measure-guardians.mjs` 在 60 Hz 模擬 30 秒，使用真實寵物、招式、投射物與碰撞程式。
++操控者攻擊固定 1、無強化、寵物位置固定、一般屬性無限血靶、開放地形。
++不模擬灼傷持續跳傷、擊退移動、敵人反擊或玩家走位；以下是直接傷害 DPS，不是勝率或完整排名。
++
++| 完全體 | 舊版距離 100／180／250 | 新版距離 100／180／250 | 新版扇形五靶 | 新版直線五靶 |
++| --- | --- | --- | ---: | ---: |
++| 噴火龍 | 109.8／13.1／4.2 | 176.8／93.6／42.7 | 318.1 | 287.8 |
++| 巴大蝶 | 136.7／132.7／132.7 | 136.7／132.7／132.7 | 132.7 | 402.1 |
++| 暴鯉龍 | 178.5／178.5／173.8 | 178.5／178.5／173.8 | 370.9 | 883.0 |
++| 雷丘 | — | 96.8／93.8／93.8 | 362.8 | 353.8 |
++| 象牙豬 | — | 86.3／84.6／84.6 | 177.5 | 426.3 |
++
++因此優先修正噴火龍的射程落差，巴大蝶增加支援價值，暴鯉龍保留長成長時間的爆發回報。
++初查所見 380 是索敵距離，攻擊執行器另有射程檢查；真正的問題是短火焰壽命與散射讓邊緣命中率急降，
++並不是所有 380 內敵人都能觸發空放。新雷丘偏群控、新象牙豬偏保護，不追求每種情境 DPS 相同。
++
++## 存檔與驗證
++
++延用 `ps.save.solo` 與原 JSON 備份格式；新增 `resonance: { ranks, essence }`。
++舊存檔補空欄位、保留金幣、角色、強化與任務；沒有逐物種歷史重複次數，無法可靠追溯補發。
++合併取較高階級，精華取較新存檔，避免已花資源復活。匯入拒絕負值、非整數、超過上限或無效物種。
++
++驗證指令：
++
++```sh
++node tools/check-resonance.mjs
++node tools/check-expedition.mjs
++node tools/measure-guardians.mjs
++node tools/build-solo.mjs
++node --check dist/js/game.bundle.js
++```
++
++本次環境沒有 Sites 指定的 browser-control，不做瀏覽器、iPhone 觸控或完整通關驗收。
++測試僅用隔離記憶體存檔，不會讀寫玩家目前的瀏覽器進度。
+diff --git a/index.html b/index.html
+index 5fdae12..2116e1e 100644
+--- a/index.html
++++ b/index.html
+@@ -434,6 +434,6 @@
+ </section>
+ 
+ <!-- datos generados -->
+-<script defer src="js/app.min.js?v=5f964816b82f"></script>
++<script defer src="js/app.min.js?v=3c203b04e20d"></script>
+ </body>
+ </html>
+diff --git a/js/app.min.js b/js/app.min.js
+index 7857104..afc2d90 100644
+--- a/js/app.min.js
++++ b/js/app.min.js
+@@ -1310,7 +1310,7 @@ if (G.I18n.lang === 'zh-Hant') G.I18n.add({
+   "Tiradas sin legendaria en {x}: {x} / {x}": "{x} 招募未出傳說次數：{x}／{x}",
+   "· A las {x} tiradas sin Legendaria en un banner, la siguiente lo es.": "· 同一地區連續 {x} 次未出傳說，下次必定獲得。",
+   "· La tirada ×10 garantiza al menos una Épica.": "· 十連抽至少保證一隻史詩寶可夢。",
+-  "· Los repetidos dan Pokémonedas (los shiny repetidos, el triple).": "· 重複夥伴轉換為金幣，重複異色可得三倍。",
++  "· Los repetidos dan Pokémonedas (los shiny repetidos, el triple).": "· 重複夥伴保留金幣回饋；史詩／傳說另提升共鳴並累積精華。",
+   "· Los tickets se consiguen jugando: algunos Pokémon los sueltan al caer, y los jefes y los legendarios de las grietas dan tickets ×10.": "· 抽獎券由冒險取得；部分敵人會掉落，首領與裂隙傳說可提供十連抽券。",
+   "Tirar ×1 ·": "招募一次 ·",
+   "Tirar ×10 ·": "招募十次 ·",
+@@ -3307,7 +3307,7 @@ if (G.I18n.lang === 'zh-Hant') G.I18n.add({
+   "Pulls without a legendary in {x}: {x} / {x}": "{x} 招募未出傳說次數：{x}／{x}",
+   "· After {x} pulls without a Legendary on a banner, the next one is.": "· 同一地區連續 {x} 次未出傳說，下次必定獲得。",
+   "· The ×10 pull guarantees at least one Epic.": "· 十連抽至少保證一隻史詩寶可夢。",
+-  "· Duplicates give PokéCoins (shiny duplicates, triple).": "· 重複夥伴轉換為金幣，重複異色可得三倍。",
++  "· Duplicates give PokéCoins (shiny duplicates, triple).": "· 重複夥伴保留金幣回饋；史詩／傳說另提升共鳴並累積精華。",
+   "· Tickets are earned by playing: some Pokémon drop them when defeated, and bosses and rift legendaries give ×10 tickets.": "· 抽獎券由冒險取得；部分敵人會掉落，首領與裂隙傳說可提供十連抽券。",
+   "Pull ×1 ·": "招募一次 ·",
+   "Pull ×10 ·": "招募十次 ·",
+@@ -6008,6 +6008,7 @@ G.DB = (() => {
+       upgrades: {},           // shared permanent upgrades for all solo Pokémon
+       pupg: {},               // dex -> { id -> nivel }: mejoras de cada Pokémon
+       tickets: { t1: 0, t10: 0 },   // tickets del gacha (x1 y x10)
++      resonance: { ranks: {}, essence: 0 }, // bounded duplicate growth, shared by shiny variant
+       pity: {},               // generación del banner -> tiradas sin ★5
+       legends: {},            // dex -> fecha: legendarios vencidos en grietas
+       arenas: {},             // tipo -> fecha: arenas de grieta ganadas
+@@ -6038,6 +6039,7 @@ G.DB = (() => {
+     }
+     if (G.SOLO) G.Upgrades.globalize(s);
+     s.tickets = Object.assign({ t1: 0, t10: 0 }, s.tickets);
++    if (G.SOLO && G.Resonance) G.Resonance.normalize(s);
+     s.v = VERSION;
+     return s;
+   }
+@@ -6069,6 +6071,14 @@ G.DB = (() => {
+       for (const k in older.pupg[d]) mine[k] = Math.max(mine[k] || 0, older.pupg[d][k]);
+     }
+     r.pupgDone = r.pupgDone || older.pupgDone;
++    if (G.SOLO && G.Resonance) {
++      // Rank never decreases; spendable essence follows the newer save, like coins.
++      G.Resonance.normalize(r);
++      for (const d of Object.keys(older.resonance?.ranks || {})) {
++        const n = G.Resonance.rank(older, d);
++        if (n > G.Resonance.rank(r, d)) r.resonance.ranks[d] = n;
++      }
++    }
+     // Lo conseguido nunca se pierde: unión de legendarios, arenas, objetos, logros...
+     for (const coll of ['legends', 'arenas', 'itemsFound', 'evoMoves', 'ach']) {
+       r[coll] = r[coll] || {};
+@@ -6517,6 +6527,7 @@ G.DB = (() => {
+       throw new Error('存檔中的統計資料不正確。');
+     if (s.profile && s.profile.title && !/^[\p{L}\p{N} _.-]{0,80}$/u.test(s.profile.title))
+       throw new Error('存檔中的稱號格式不正確。');
++    if (G.Resonance && !G.Resonance.valid(s)) throw new Error('存檔中的共鳴資料不正確。');
+     s.name = '訓練家';
+     return migrate(s, '訓練家');
+   }
+@@ -8711,6 +8722,70 @@ G.Upgrades = (() => {
+   return { LIST, BY, cost, perks, globalize };
+ })();
+ 
++;
++/* js/systems/resonance.js */
++/* Permanent, species-specific duplicate growth. Normal/shiny share one rank.
++ * Pure save operations: caller commits once after the whole draw/exchange.
++ * No historical copies are inferred from an old save's total pull counter. */
++G.Resonance = (() => {
++  const MAX = 5;
++  const COST = { 4: { grow: 12, recruit: 40 }, 5: { grow: 36, recruit: 120 } };
++  const eligible = dex => [4, 5].includes(G.DEX_BY[dex]?.rarity);
++  const rank = (save, dex) => eligible(dex) && save?.owned?.[dex]
++    ? Math.min(MAX, Math.max(0, Math.floor(Number(save.resonance?.ranks?.[dex]) || 0))) : 0;
++  function normalize(save) {
++    const old = save.resonance;
++    const ranks = {};
++    if (old?.ranks && typeof old.ranks === 'object') for (const dex of Object.keys(old.ranks)) {
++      if (/^\d+$/.test(dex) && eligible(dex) && save.owned?.[dex]) ranks[dex] = rank(save, dex);
++    }
++    save.resonance = { ranks, essence: Number.isSafeInteger(old?.essence) && old.essence >= 0 ? Math.min(1e12, old.essence) : 0 };
++    return save.resonance;
++  }
++  function valid(save) {
++    const r = save.resonance;
++    if (r == null) return true;
++    if (typeof r !== 'object' || Array.isArray(r) || !Number.isSafeInteger(r.essence) || r.essence < 0 || r.essence > 1e12
++      || !r.ranks || typeof r.ranks !== 'object' || Array.isArray(r.ranks)) return false;
++    return Object.entries(r.ranks).every(([dex, n]) => /^\d+$/.test(dex) && eligible(dex) && save.owned?.[dex]
++      && Number.isInteger(n) && n >= 0 && n <= MAX);
++  }
++  function bonus(save, dex) {
++    const n = rank(save, dex);
++    return { rank: n, atk: 1 + n * .04, hp: 1 + n * .03, cd: n >= 3 ? .95 : 1, spd: n >= 5 ? 1.05 : 1 };
++  }
++  function reward(save, dex) {
++    if (!eligible(dex) || !save.owned?.[dex]) return null;
++    const r = normalize(save), before = rank(save, dex), after = Math.min(MAX, before + 1);
++    const essence = (G.DEX_BY[dex].rarity === 5 ? 3 : 1) * (before === MAX ? 3 : 1);
++    r.ranks[dex] = after; r.essence = Math.min(1e12, r.essence + essence);
++    return { before, after, essence, capped: before === MAX };
++  }
++  function offer(save, dex) {
++    if (!eligible(dex) || !G.SPRITE_META[dex]) return null;
++    const owned = !!save.owned?.[dex], n = rank(save, dex);
++    if (owned && n >= MAX) return null;
++    const kind = owned ? 'grow' : 'recruit', cost = COST[G.DEX_BY[dex].rarity][kind];
++    return { kind, cost, next: owned ? n + 1 : 0, affordable: (save.resonance?.essence || 0) >= cost };
++  }
++  function exchange(save, dex) {
++    const o = offer(save, dex);
++    if (!o?.affordable) return null;
++    const r = normalize(save);
++    r.essence -= o.cost;
++    if (o.kind === 'grow') r.ranks[dex] = o.next;
++    else save.owned[dex] = { at: Date.now(), from: 'resonance' };
++    // Spending essence is not a gacha draw: no gold, essence refund or pity change.
++    return o;
++  }
++  function summary(save, dex) {
++    const b = bonus(save, dex);
++    if (!b.rank) return '每階攻擊 +4%、生命 +3%；+3 冷卻縮短 5%，+5 移速 +5%。';
++    return `攻擊 +${b.rank * 4}% · 生命 +${b.rank * 3}%${b.rank >= 3 ? ' · 冷卻 −5%' : ''}${b.rank >= 5 ? ' · 移速 +5%' : ''}`;
++  }
++  return { MAX, COST, eligible, rank, normalize, valid, bonus, reward, offer, exchange, summary };
++})();
++
+ ;
+ /* js/data/items.js */
+ /* ============ items.js — objetos equipables (uno por run) ============
+@@ -12182,7 +12257,7 @@ G.Player = class Player {
+    * @param mon   entrada de G.DEX
+    * @param perks mejoras permanentes ya resueltas (ver data/upgrades.js)
+    */
+-  constructor(mon, perks = {}, shiny = false) {
++  constructor(mon, perks = {}, shiny = false, useResonance = true) {
+     this.mon = mon;
+     this.dex = mon.dex;
+     this.shiny = shiny && G.Sprites.hasShiny(mon.dex);
+@@ -12204,6 +12279,14 @@ G.Player = class Player {
+     this.hp = this.maxHp;
+     this.baseSpd = mon.spd;
+     this.baseAtk = mon.atk;
++    // Companion actors use their own guardian balance and inherit owner attack.
++    if (G.SOLO && useResonance && G.Resonance) {
++      const b = G.Resonance.bonus(G.DB?.save, mon.dex);
++      this.resonanceRank = b.rank;
++      this.baseAtk *= b.atk;
++      this.maxHp = Math.round(this.maxHp * b.hp); this.hp = this.maxHp;
++      this.cdMul *= b.cd; this.spdMul *= b.spd;
++    }
+ 
+     this.moves = [];           // todos los movimientos aprendidos
+     this.slots = [];           // huecos: cada uno, una lista de movimientos que se lanzan a la vez
+@@ -14500,13 +14583,19 @@ G.Guardian = (() => {
+   const LINES = [
+     { id: 'flame', stages: [4, 5, 6], times: [85, 205], color: '#ffa569', icon: 'fist',
+       name: '尾焰的約定', tag: '火力型 · 兩次進化', desc: '小火龍 → 火恐龍 → 噴火龍。成長後以扇形火焰清群，定期爆發熱風。',
+-      move: 'flamethrower', power: 3.4, interval: 1.15, boss: 248, bossName: '岩鎧追獵者', behavior: 'chase', special: 'fire' },
++      move: 'flamethrower', power: 3.8, interval: 1.05, boss: 248, bossName: '岩鎧追獵者', behavior: 'chase', special: 'fire' },
+     { id: 'wings', stages: [10, 11, 12], times: [55, 175], color: '#c4b3ff', icon: 'sprout',
+-      name: '破繭的勇氣', tag: '支援型 · 最快成長', desc: '綠毛蟲 → 鐵甲蛹 → 巴大蝶。進化後發射念力、減速敵人，並週期治療你和夥伴。',
+-      move: 'confusion', power: 3.2, interval: .9, boss: 169, bossName: '夜翼追獵者', behavior: 'charger', special: 'poison' },
++      name: '破繭的勇氣', tag: '支援型 · 最快成長', desc: '綠毛蟲 → 鐵甲蛹 → 巴大蝶。追蹤念力減速敵人；每 10 秒為附近的你回復 9% 生命，夥伴回復 15%。',
++      move: 'confusion', power: 3.2, interval: .9, specialInterval: 10, boss: 169, bossName: '夜翼追獵者', behavior: 'charger', special: 'poison' },
+     { id: 'tide', stages: [129, 130], times: [240], color: '#83cfff', icon: 'shield',
+       name: '逆流成龍', tag: '爆發型 · 耐心換取巨變', desc: '鯉魚王 → 暴鯉龍。需要守護較久，進化後以高壓水炮貫穿敵群，定期掀起震退浪潮。',
+-      move: 'hydro-pump', power: 6.2, interval: 1.55, boss: 405, bossName: '雷牙追獵者', behavior: 'ranged', special: 'electric' }
++      move: 'hydro-pump', power: 6.2, interval: 1.55, boss: 405, bossName: '雷牙追獵者', behavior: 'ranged', special: 'electric' },
++    { id: 'spark', stages: [172, 25, 26], times: [75, 195], color: '#ffe580', icon: 'type:electric',
++      name: '小小電光', tag: '連鎖型 · 分散敵群', desc: '皮丘 → 皮卡丘 → 雷丘。十萬伏特在敵人間跳躍並減速；每 10 秒以放電擊退身旁敵人。單體傷害較低，擅長對付分散敵群。',
++      move: 'thunderbolt', power: 3.3, interval: 1.1, specialInterval: 10, boss: 232, bossName: '重踏追獵者', behavior: 'chase', special: 'ground' },
++    { id: 'frost', stages: [220, 221, 473], times: [95, 220], color: '#a6e6f5', icon: 'shield',
++      name: '雪地裡的依靠', tag: '防護型 · 冰凍陣線', desc: '小山豬 → 長毛豬 → 象牙豬。冰凍光束貫穿並減速；每 12 秒震退近敵，為附近的你補至 12% 生命護盾、夥伴補至 15%。護盾不累加。',
++      move: 'ice-beam', power: 3.5, interval: 1.2, boss: 467, bossName: '熔焰追獵者', behavior: 'ranged', special: 'fire' }
+   ];
+   let s = null;
+   const mature = () => !!s?.pet && s.stage === s.line.stages.length - 1;
+@@ -14514,7 +14603,7 @@ G.Guardian = (() => {
+   function start(options) {
+     s = options.mode === 'guardian' && G.SOLO ? { elapsed: 0, chest: null, opened: false, offered: false,
+       pet: null, line: null, stage: 0, growth: 0, downs: 0, revives: 0, revive: 0, recallCd: 0,
+-      attackCd: 0, specialCd: 10, shots: 0, stuck: 0, wasRift: false,
++      attackCd: 0, specialCd: 10, shots: 0, shield: 0, stuck: 0, wasRift: false,
+       maturedAt: null, grace: 30, warning: null, boss: null, bossSkill: 5, bossPhase: 1,
+       bossDefeated: false, rewarded: false, continued: false, breather: 0 } : null;
+     if (s) G.Sprites.preload(LINES.flatMap(l => [...l.stages, l.boss]));
+@@ -14531,7 +14620,7 @@ G.Guardian = (() => {
+ 
+   function makePet(dex, p, old = null) {
+     const perks = G.Upgrades.perks(G.DB.upgradesOf(dex));
+-    const pet = new G.Player(G.DEX_BY[dex], perks);
++    const pet = new G.Player(G.DEX_BY[dex], perks, false, false);
+     Object.assign(pet, old ? { x: old.x, y: old.y } : safePoint(p, 45, pet.r));
+     pet.maxHp = Math.round(120 + pet.maxHp * (1 + s.stage * .35));
+     pet.hp = pet.maxHp; pet.invuln = 2;
+@@ -14559,7 +14648,9 @@ G.Guardian = (() => {
+     if (!pet || pet.invuln > 0 || !p || p.dead || G.Game.state !== 'playing') return;
+     const nearby = Math.hypot(pet.x - p.x, pet.y - p.y) <= 100;
+     const mult = type ? G.Types.mult(type, pet.mon.types) : 1;
+-    const taken = Math.max(1, damage * mult * (1 - pet.reduction) * (nearby ? .5 : .85));
++    const raw = Math.max(1, damage * mult * (1 - pet.reduction) * (nearby ? .5 : .85));
++    const absorbed = Math.min(s.shield, raw); s.shield -= absorbed;
++    const taken = raw - absorbed;
+     pet.hp = Math.max(0, pet.hp - taken); pet.invuln = .8; pet.flash = .15;
+     G.FX.dmgText(pet.x, pet.y - pet.bodyH - 12, '-' + Math.round(taken), '#ff9c9c');
+     if (!pet.hp) {
+@@ -14588,6 +14679,10 @@ G.Guardian = (() => {
+       s.maturedAt = s.elapsed; s.grace = 30; s.pet.tag = '並肩作戰';
+       const move = G.Moves.instance(s.line.move, 3);
+       if (s.line.id === 'wings') { move.slow = .4; move.pierce = 2; }
++      // Short cone formerly lost most hits by distance 180. Keep a fan, with
++      // enough flight time to cover the guardian's fighting position.
++      if (s.line.id === 'flame') { move.life *= 1.65; move.arc = .72; }
++      if (s.line.id === 'spark') move.slow = .35;
+       s.pet.moves = [move]; s.pet.slots = [[move]]; s.pet.active = 0;
+       G.Spawner.say(`${s.pet.mon.name} 已經能保護你了！先享受並肩作戰的力量。`, 4, true);
+     } else {
+@@ -14627,16 +14722,30 @@ G.Guardian = (() => {
+       }
+     }
+     if (s.specialCd > 0) return;
+-    s.specialCd = 12;
++    s.specialCd = s.line.specialInterval || 12;
+     if (s.line.id === 'wings') {
+-      if (Math.hypot(p.x - pet.x, p.y - pet.y) < 220) { p.heal(p.maxHp * .07); pet.heal(pet.maxHp * .12); }
++      if (Math.hypot(p.x - pet.x, p.y - pet.y) < 220) { p.heal(p.maxHp * .09); pet.heal(pet.maxHp * .15); }
+       G.FX.ring(pet.x, pet.y, 8, 150, '#a4edc1', .6, 4);
+     } else if (s.line.id === 'flame') G.Combat.assist(pet, G.Moves.instance('heat-wave', 3), 3.5);
+-    else {
++    else if (s.line.id === 'tide') {
++      // Preserve the existing neutral wave damage; record it alongside beams.
+       G.FX.ring(pet.x, pet.y, 8, 170, '#88d6ff', .55, 5);
+       for (const e of G.EnemyMgr.queryCircle(pet.x, pet.y, 170)) {
+         if (e.dead) continue;
+-        e.hurt(70 * p.atk, '#88d6ff', e.x - pet.x, e.y - pet.y, 180); e.applySlow(.5, 2);
++        const damage = 70 * p.atk;
++        e.hurt(damage, '#88d6ff', e.x - pet.x, e.y - pet.y, 180); e.applySlow(.5, 2);
++        p.dmgDealt += damage; p.onDealt(damage);
++      }
++    } else if (s.line.id === 'spark') {
++      const wave = Object.assign(G.Moves.instance('discharge', 1), { radius: 150, dmg: 30, slow: .55, knock: 120 });
++      G.Combat.assist(pet, wave, 1);
++    } else if (s.line.id === 'frost') {
++      const wave = Object.assign(G.Moves.instance('powder-snow', 1), { radius: 150, dmg: 25, slow: .65, knock: 150 });
++      G.Combat.assist(pet, wave, 1);
++      if (Math.hypot(p.x - pet.x, p.y - pet.y) < 220) {
++        if (G.Expedition?.run) G.Expedition.run.shield = Math.max(G.Expedition.run.shield, p.maxHp * .12);
++        s.shield = Math.max(s.shield, pet.maxHp * .15);
++        G.FX.ring(p.x, p.y, 10, 65, s.line.color, .6, 4);
+       }
+     }
+   }
+@@ -14765,7 +14874,7 @@ G.Guardian = (() => {
+  *   - la tirada ×10 trae al menos un 4★ o superior
+  *   - a las 70 tiradas sin 5★ en ese banner, el siguiente es 5★ seguro
+  * Shiny: 1 de cada 100 tiradas sale en su versión shiny.
+- * Repetidos: se convierten en Pokémonedas (los shiny repetidos, el triple).
++ * Duplicates retain coins; solo epic/legendary species also gain Resonance.
+  *
+  * Se tira con TICKETS (se consiguen jugando):
+  *   ×1   1 ticket
+@@ -14775,6 +14884,7 @@ G.Gacha = (() => {
+   /** ¿Qué gasta una tirada de n? → { t1, t10 } o null si no te llega. */
+   /** @param use  't1' (tickets normales) o 't10' (un ticket ×10, sólo para la ×10) */
+   function costOf(save, n, use = 't1') {
++    if (![1, 10].includes(n) || !['t1', 't10'].includes(use) || (use === 't10' && n !== 10)) return null;
+     const t = save.tickets || { t1: 0, t10: 0 };
+     if (n === 10 && use === 't10') return t.t10 >= 1 ? { t1: 0, t10: 1 } : null;
+     return t.t1 >= n ? { t1: n, t10: 0 } : null;
+@@ -14836,6 +14946,7 @@ G.Gacha = (() => {
+    *   { dex, rarity, shiny, isNew, refund }
+    */
+   function pull(save, n, gen = 1, use = 't1') {
++    if (!Number.isInteger(gen) || !BANNERS.some(b => b.gen === gen)) return null;
+     const cost = costOf(save, n, use);
+     if (!cost) return null;
+     save.tickets.t1 -= cost.t1;
+@@ -14857,6 +14968,7 @@ G.Gacha = (() => {
+       const mon = G.U.pick(list);
+       const shiny = G.Sprites.hasShiny(mon.dex) && (forceShiny > 0 ? (forceShiny--, true) : Math.random() < SHINY_RATE);
+ 
++      const ownedBefore = !!save.owned[mon.dex];
+       let isNew = false, refund = 0;
+       if (shiny) {
+         isNew = !save.shiny[mon.dex];
+@@ -14869,7 +14981,8 @@ G.Gacha = (() => {
+         else refund = REFUND[rarity];
+       }
+       save.coins += refund;
+-      out.push({ dex: mon.dex, rarity, shiny, isNew, refund });
++      const resonance = G.SOLO && ownedBefore ? G.Resonance.reward(save, mon.dex) : null;
++      out.push({ dex: mon.dex, rarity, shiny, isNew, refund, resonance });
+     }
+     save.stats.pulls = (save.stats.pulls || 0) + n;
+     return out;
+@@ -19343,7 +19456,7 @@ G.MenuUI = (() => {
+     G.UI.sprite($('menu-partner'), mon.dex, { lively: true, scale: 4, hero: true, shiny });
+     $('menu-partner').style.setProperty('--stage-c', shiny ? '#9ae6ff' : G.U.TYPE_COLOR[mon.types[0]]);
+     $('menu-partner').classList.toggle('shiny', shiny);
+-    $('menu-partner-name').innerHTML = mon.name + (shiny ? ' ' + G.Icons.html('shiny', 24) : '');
++    $('menu-partner-name').innerHTML = mon.name + G.ResonanceUI.badge(mon.dex) + (shiny ? ' ' + G.Icons.html('shiny', 24) : '');
+     $('menu-partner-info').innerHTML = G.UI.typeChips(mon.types) + ' ' + G.UI.stars(mon.rarity);
+ 
+     const owned = Object.keys(s.owned).filter(d => G.DEX_BY[d]).length;
+@@ -19446,7 +19559,7 @@ G.MenuUI = (() => {
+       else if (sh) cell.insertAdjacentHTML('beforeend', `<span class="badge-r" title="Tienes su shiny">${G.Icons.html('shiny', 12)}</span>`);
+       const useShiny = sh && p.dex === s.partner && s.partnerShiny;
+       cell.appendChild(G.UI.spriteCanvas(p.dex, 92, 80, { scale: 2, silhouette: !own, shadow: own, shiny: useShiny }));
+-      cell.insertAdjacentHTML('beforeend', `<b>${own ? p.name : '???'}</b>${G.UI.stars(p.rarity, 9)}`);
++      cell.insertAdjacentHTML('beforeend', `<b>${own ? p.name + G.ResonanceUI.badge(p.dex) : '???'}</b>${G.UI.stars(p.rarity, 9)}`);
+       cell.onclick = () => {
+         dexSel = p.dex;
+         grid.querySelectorAll('.cell').forEach(c => c.classList.remove('on'));
+@@ -19484,11 +19597,13 @@ G.MenuUI = (() => {
+           <button class="${viewShiny ? 'on' : ''}" data-v="1">${G.Icons.html('shiny', 12)} Shiny</button></div>` : ''}
+       <div class="center">
+         <div style="color:var(--muted);font-size:13px">Nº ${String(p.dex).padStart(3, '0')} · ${GEN_NAMES[p.gen - 1]}</div>
+-        <h3>${own ? p.name : '???'}</h3>
++        <h3>${own ? p.name + G.ResonanceUI.badge(dex) : '???'}</h3>
+         <div style="color:${G.Gacha.RARITY_COLOR[p.rarity]}">${G.UI.stars(p.rarity, 24)} ${G.Gacha.RARITY_NAME[p.rarity]}</div>
+         <div style="margin:6px 0">${own ? G.UI.typeChips(p.types) : ''}</div>
+       </div>
+       ${own ? `
++        ${G.ResonanceUI.detail(dex)}
++        <small>以下為基礎數值（共鳴加成另計）</small>
+         ${bar('Vida', p.hp, max.hp, p.hp)}
+         ${bar('Ataque', p.atk, max.atk, '×' + p.atk.toFixed(2))}
+         ${bar('Velocidad', p.spd, max.spd, p.spd)}
+@@ -19507,6 +19622,7 @@ G.MenuUI = (() => {
+     box.querySelectorAll('.seg button').forEach(b => {
+       b.onclick = () => { viewShiny = b.dataset.v === '1'; showDetail(dex); };
+     });
++    G.ResonanceUI.bindDetail(box, () => { renderGrid(); showDetail(dex); });
+     const pick = $('dex-pick');
+     if (pick) pick.onclick = () => {
+       s.partner = dex;
+@@ -19913,9 +20029,12 @@ G.GachaUI = (() => {
+       `<div><span>${G.Icons.html('shiny', 12)} Shiny</span><span>1%</span></div>
+        <p class="note">· La tirada ×10 garantiza al menos una Épica.<br>
+        · A las ${G.Gacha.PITY_5} tiradas sin Legendaria en un banner, la siguiente lo es.<br>
+-       · Los repetidos dan Pokémonedas (los shiny repetidos, el triple).<br>
++       · 重複夥伴保留金幣回饋；史詩／傳說另升共鳴 +1，最高 +5。<br>
++       · 每次重複史詩／傳說另得 1／3 精華；已滿階改得 3／9。普通與異色共用升階。<br>
++       · 首次異色仍會解鎖；若已擁有同種普通版本，同時獲得共鳴回饋。<br>
+        · Los tickets se consiguen jugando: algunos Pokémon los sueltan al caer, y
+-         los jefes y los legendarios de las grietas dan tickets ×10.</p>`;
++         los jefes y los legendarios de las grietas dan tickets ×10.</p>` + G.ResonanceUI.workshop();
++    G.ResonanceUI.bindWorkshop(refresh);
+ 
+     const t = s.tickets;
+     $('cost-1').innerHTML = `${G.Icons.html('ticket', 18)} 1`;
+@@ -19960,7 +20079,7 @@ G.GachaUI = (() => {
+       const tag = r.isNew
+         ? `<span class="new">${r.shiny ? '¡SHINY NUEVO!' : '¡NUEVO!'}</span>`
+         : `Repetido · <span class="coin"></span> +${r.refund}`;
+-      c.insertAdjacentHTML('beforeend', `<b>${r.shiny ? G.Icons.html('shiny', 12) + ' ' : ''}${mon.name}</b><div class="tag">${tag}</div>`);
++      c.insertAdjacentHTML('beforeend', `<b>${r.shiny ? G.Icons.html('shiny', 12) + ' ' : ''}${mon.name}</b><div class="tag">${tag}</div>${G.ResonanceUI.reward(r)}`);
+       out.appendChild(c);
+       G.Audio.sfx('reveal', { rarity: r.rarity });
+       await wait(n === 10 ? 150 : 0);
+@@ -19977,6 +20096,67 @@ G.GachaUI = (() => {
+   return { init, open, get open_() { return !$('pull-fx').classList.contains('hidden'); } };
+ })();
+ 
++;
++/* js/ui/resonance-ui.js */
++/* Visible progression and a deterministic alternative to waiting for one dupe. */
++G.ResonanceUI = (() => {
++  let selected = 0;
++  const R = () => G.Resonance;
++  function badge(dex) {
++    const n = R().rank(G.DB.save, dex);
++    return n ? ` <span class="resonance-badge" title="共鳴升階 +${n}">+${n}</span>` : '';
++  }
++  function detail(dex) {
++    if (!R().eligible(dex)) return '';
++    const s = G.DB.save, n = R().rank(s, dex), o = R().offer(s, dex);
++    return `<div class="resonance-detail"><strong>共鳴 +${n} / +${R().MAX}</strong><p>${R().summary(s,dex)}</p><small>普通／異色共用；加成用於你操作這隻寶可夢時。${n < 3 ? '+3 解鎖冷卻縮短 5%。' : n < 5 ? '+5 解鎖移速 +5%。' : '已滿階，再次重複可獲得更多精華。'}</small>${o ? `<button type="button" class="btn small resonance-grow" data-grow="${dex}" ${o.affordable ? '' : 'disabled'}>培養至 +${o.next} · ${o.cost} 精華</button>` : ''}<small>持有共鳴精華：${s.resonance?.essence || 0}</small></div>`;
++  }
++  function bindDetail(box, refresh) {
++    const button = box.querySelector('[data-grow]');
++    if (button) button.onclick = () => {
++      const result = R().exchange(G.DB.save, Number(button.dataset.grow));
++      if (!result) return;
++      G.DB.commit(true); G.Audio.sfx('legend'); refresh();
++    };
++  }
++  function workshop() {
++    const s = G.DB.save;
++    const pool = G.DEX.filter(p => R().offer(s, p.dex));
++    if (!pool.some(p => p.dex === selected)) selected = pool.find(p => p.dex === s.partner)?.dex || pool[0]?.dex || 0;
++    return `<details class="resonance-workshop"><summary>共鳴工坊 · 精華 ${s.resonance?.essence || 0}</summary><p>重複史詩、傳說都能累積精華。你可以指定培養，也可以存起來招募尚未擁有的夥伴。</p><label for="resonance-target">選擇目標（所有世代）</label><select id="resonance-target">${pool.map(p => {
++      const o = R().offer(s,p.dex);
++      return `<option value="${p.dex}" ${selected === p.dex ? 'selected' : ''}>${p.rarity === 5 ? '傳說' : '史詩'} · ${p.name} · ${o.kind === 'grow' ? '培養 +' + o.next : '首次招募'} · ${o.cost} 精華</option>`;
++    }).join('')}</select><p id="resonance-preview" aria-live="polite"></p><button type="button" class="btn gold" id="resonance-exchange">指定培養／招募</button><small>培養：史詩 12／傳說 36；首次招募：史詩 40／傳說 120。招募得到普通版本，從 +0 開始。兌換不消耗招募券、不影響保底。</small></details>`;
++  }
++  function bindWorkshop(refresh) {
++    const select = document.getElementById('resonance-target'), button = document.getElementById('resonance-exchange');
++    if (!select || !button) return;
++    const update = () => {
++      selected = Number(select.value);
++      const s = G.DB.save, o = R().offer(s,selected);
++      document.getElementById('resonance-preview').textContent = !o ? '所有史詩與傳說都已滿階！精華會繼續保留。' : `${G.DEX_BY[selected].name} · ${o.kind === 'grow' ? '共鳴 +' + R().rank(s,selected) + ' → +' + o.next : '加入收藏（普通版本）'}${o.affordable ? '' : ` · 還差 ${o.cost - (s.resonance?.essence || 0)} 精華`}`;
++      button.disabled = !o?.affordable;
++      button.textContent = o ? `${o.kind === 'grow' ? '培養至 +' + o.next : '招募 ' + G.DEX_BY[selected].name} · ${o.cost} 精華` : '已全部滿階';
++    };
++    select.onchange = update; update();
++    button.onclick = () => {
++      // Re-read cost/rank at click time, then commit before refreshing the UI.
++      const result = R().exchange(G.DB.save,selected);
++      if (!result) { update(); return; }
++      G.Progress.checkAch(); G.DB.commit(true); G.Audio.sfx('legend');
++      G.UI.toast(`${G.DEX_BY[selected].name}${result.kind === 'grow' ? ' 共鳴 +' + result.next : ' 已加入收藏'}`);
++      refresh(); document.querySelector('.resonance-workshop').open = true;
++    };
++  }
++  function reward(r) {
++    if (!r.resonance) return '';
++    const a = r.resonance;
++    const milestone = a.after !== a.before && a.after === 3 ? '冷卻 −5% 解鎖' : a.after !== a.before && a.after === 5 ? '移速 +5% 解鎖' : '';
++    return `<div class="resonance-reward"><strong>${a.capped ? '共鳴 +5 · 滿階回饋' : `共鳴 +${a.before} → +${a.after}`}</strong>${a.capped ? '' : '<span>攻擊 +4% · 生命 +3%</span>'}${milestone ? `<span>${milestone}</span>` : ''}<span>共鳴精華 +${a.essence}</span></div>`;
++  }
++  return { badge, detail, bindDetail, workshop, bindWorkshop, reward };
++})();
++
+ ;
+ /* js/ui/run-ui.js */
+ /* ============ run-ui.js — cartas de nivel, pausa y fin de run ============ */
+@@ -22114,7 +22294,7 @@ G.GuardianUI = (() => {
+     box.querySelectorAll('[data-guardian-dex]').forEach(el => el.appendChild(G.UI.spriteCanvas(Number(el.dataset.guardianDex), 58, 54, { lively: true, scale: 1.5 })));
+   }
+   function prepare() {
+-    return `<div class="guardian-intro"><strong>${G.Icons.html('heart', 20)} 這次，有一位夥伴等你帶回家。</strong><p>01:00 出現守護寶箱。救出幼體，待在牠身邊累積成長；完全進化後，牠會開始保護你。迎戰追獵者，讓整條進化系加入收藏。</p><div class="guardian-lines">${G.Guardian.LINES.map(l => `<div style="--exp-color:${l.color}">${stages(l)}<b>${l.name}</b><small>守護 ${clock(l.times.at(-1))} 成為完全體${G.DB.save.stats['guardianBond_' + l.id] ? ' · 已締結羈絆' : ''}</small></div>`).join('')}</div><p class="note">倒下不會永久失去夥伴；靠近守住 3 秒即可救起。按 G／召回按鈕可帶牠回到身邊，冷卻 14 秒。遠離、倒下或進入裂隙時，成長暫停。</p></div>`;
++    return `<div class="guardian-intro"><strong>${G.Icons.html('heart', 20)} 這次，有一位夥伴等你帶回家。</strong><p>01:00 出現守護寶箱。救出幼體，待在牠身邊累積成長；完全進化後，牠會開始保護你。迎戰追獵者，讓整條進化系加入收藏。</p><div class="guardian-lines">${G.Guardian.LINES.map(l => `<div style="--exp-color:${l.color}">${stages(l)}<b>${l.name}</b><small>${l.tag}</small><small>守護 ${clock(l.times.at(-1))} 成為完全體${G.DB.save.stats['guardianBond_' + l.id] ? ' · 已締結羈絆' : ''}</small></div>`).join('')}</div><p class="note">倒下不會永久失去夥伴；靠近守住 3 秒即可救起。按 G／召回按鈕可帶牠回到身邊，冷卻 14 秒。遠離、倒下或進入裂隙時，成長暫停。</p></div>`;
+   }
+   function choice(type, list) {
+     if (type === 'guardian') return `<p class="exp-eyebrow">A PROMISE TO PROTECT / 守護的約定</p><h2>牠還很弱小，但牠相信你。</h2><p class="sub">選一位同行夥伴。幼體不攻擊；守住這段成長時間，見證牠的蛻變。戰鬥已暫停。</p><div class="exp-relic-grid guardian-choices">${list.map((l, i) => `<button class="exp-relic" data-choice="${i}" style="--exp-color:${l.color}"><span class="exp-relic-top">${stages(l)}<kbd>${i + 1}</kbd></span><small>${l.tag}</small><h3>${l.name}</h3><p>${l.desc}</p><span class="guardian-growth">${l.times.map((t, n) => `${clock(t)} ${G.DEX_BY[l.stages[n + 1]].name}`).join(' · ')}</span><span class="exp-take">我會保護你 →</span></button>`).join('')}</div><p class="note">牠在你 220 範圍內才會成長。靠近可減少牠受到的傷害；G 召回也能回復 18% 夥伴生命。全隊永久強化同樣適用。</p>`;
+@@ -22141,7 +22321,7 @@ G.GuardianUI = (() => {
+     ctx.fillStyle = '#e8e1c8';
+     if (pet) {
+       const dead = pet.dead;
+-      ctx.fillText(dead ? `救援 ${s.revive.toFixed(1)} / 3 秒` : `生命 ${Math.ceil(pet.hp)} / ${pet.maxHp}`, x, y + 16, width - 90);
++      ctx.fillText(dead ? `救援 ${s.revive.toFixed(1)} / 3 秒` : `生命 ${Math.ceil(pet.hp)} / ${pet.maxHp}${s.shield > 0 ? ' · 盾 ' + Math.ceil(s.shield) : ''}`, x, y + 16, width - 90);
+       ctx.fillStyle = '#384550'; ctx.fillRect(x, y + 21, width - 90, 4);
+       ctx.fillStyle = dead ? '#ffd596' : s.line.color; ctx.fillRect(x, y + 21, (width - 90) * Math.min(1, dead ? s.revive / 3 : pet.hp / pet.maxHp), 4);
+       ctx.fillStyle = '#c9deed';
+@@ -22162,7 +22342,7 @@ G.GuardianUI = (() => {
+         text = s.chest.open > 0 ? `開啟中 ${s.chest.open.toFixed(1)} / 3 秒` : `守護寶箱在${dir} · 靠近停留 3 秒`;
+       }
+       ctx.fillText(text, x, y + 20, width - 12);
+-      ctx.fillStyle = '#a5bbc8'; ctx.fillText('小火龍 / 綠毛蟲 / 鯉魚王', x, y + 39, width - 12);
++      ctx.fillStyle = '#a5bbc8'; ctx.fillText('5 位夥伴 · 火力 / 治療 / 爆發 / 連鎖 / 防護', x, y + 39, width - 12);
+     }
+     ctx.fillStyle = '#f5d991'; ctx.fillText(goal(s), x, y + 57, width - 12);
+     const trial = G.ExpeditionTrials.state.active, c = r.contract;
+@@ -22210,7 +22390,7 @@ G.ExpeditionUI = (() => {
+     if (!known.some(r => r.id === options.focus)) options.focus = '';
+     box.innerHTML = `<div class="exp-heading"><div><p class="exp-eyebrow">SOLO EXPEDITION / 單人遠征</p><h2>下一段冒險，由你出發</h2><p class="sub">選擇作戰風格，讓這一局走出不同的路。</p></div><div id="exp-partner"></div></div>
+       <div class="exp-record"><span>遠征通關 <b>${s.stats.expeditionWins || 0}</b></span><span>最佳評分 <b>${s.stats.expeditionBest || 0}</b></span><span>遺物圖鑑 <b>${known.length}/12</b></span></div>
+-      <div class="exp-mastery"><div><strong>${G.DEX_BY[s.partner].name} · ${mastery.name} ${'★'.repeat(mastery.rank)}</strong><small>${mastery.next ? `熟練度 ${mastery.xp} / ${mastery.next} · 升階獎勵 120 金幣` : '已達最高熟練階級'} · 本局遺物重選 ${1 + Math.min(2, mastery.rank)} 次</small></div><progress aria-label="夥伴熟練度" max="${mastery.next ? mastery.next - mastery.base : 1}" value="${mastery.next ? mastery.xp - mastery.base : 1}"></progress></div>
++      <div class="exp-mastery"><div><strong>${G.DEX_BY[s.partner].name}${G.ResonanceUI.badge(s.partner)} · ${mastery.name} ${'★'.repeat(mastery.rank)}</strong><small>${mastery.next ? `熟練度 ${mastery.xp} / ${mastery.next} · 升階獎勵 120 金幣` : '已達最高熟練階級'} · 本局遺物重選 ${1 + Math.min(2, mastery.rank)} 次</small></div><progress aria-label="夥伴熟練度" max="${mastery.next ? mastery.next - mastery.base : 1}" value="${mastery.next ? mastery.xp - mastery.base : 1}"></progress></div>
+       <h3 class="exp-label">01 / 冒險方式</h3><div class="exp-options exp-modes">
+       ${optionButton('mode', 'guardian', '守護夥伴', '從弱小幼體到並肩作戰。救出夥伴、陪牠進化，再一起擊敗追獵者。', 'heart', '#afe4bd')}
+       ${optionButton('mode', 'expedition', '十二分鐘遠征', '遺物、途中委託、閃避與清場大絕。擊敗 12:00 出現的最終首領，即可領獎撤離或繼續生存。')}
+@@ -22325,7 +22505,7 @@ G.ExpeditionUI = (() => {
+     } else if (kind === 'prepare') {
+       if (G.Input.tap('escape')) G.Flow.goMenu();
+     } else {
+-      for (let i = 0; i < (kind === 'dash' ? 4 : 3); i++) if (G.Input.tap('digit' + (i + 1)) || G.Input.tap('numpad' + (i + 1))) pick(i);
++      for (let i = 0; i < (kind === 'clear' ? 2 : offered.length); i++) if (G.Input.tap('digit' + (i + 1)) || G.Input.tap('numpad' + (i + 1))) pick(i);
+       if (G.Input.tap('keyr')) reroll();
+     }
+     return true;
+diff --git a/js/core/db.js b/js/core/db.js
+index 2dfbb84..2522f1e 100644
+--- a/js/core/db.js
++++ b/js/core/db.js
+@@ -70,6 +70,7 @@ G.DB = (() => {
+       upgrades: {},           // shared permanent upgrades for all solo Pokémon
+       pupg: {},               // dex -> { id -> nivel }: mejoras de cada Pokémon
+       tickets: { t1: 0, t10: 0 },   // tickets del gacha (x1 y x10)
++      resonance: { ranks: {}, essence: 0 }, // bounded duplicate growth, shared by shiny variant
+       pity: {},               // generación del banner -> tiradas sin ★5
+       legends: {},            // dex -> fecha: legendarios vencidos en grietas
+       arenas: {},             // tipo -> fecha: arenas de grieta ganadas
+@@ -100,6 +101,7 @@ G.DB = (() => {
+     }
+     if (G.SOLO) G.Upgrades.globalize(s);
+     s.tickets = Object.assign({ t1: 0, t10: 0 }, s.tickets);
++    if (G.SOLO && G.Resonance) G.Resonance.normalize(s);
+     s.v = VERSION;
+     return s;
+   }
+@@ -131,6 +133,14 @@ G.DB = (() => {
+       for (const k in older.pupg[d]) mine[k] = Math.max(mine[k] || 0, older.pupg[d][k]);
+     }
+     r.pupgDone = r.pupgDone || older.pupgDone;
++    if (G.SOLO && G.Resonance) {
++      // Rank never decreases; spendable essence follows the newer save, like coins.
++      G.Resonance.normalize(r);
++      for (const d of Object.keys(older.resonance?.ranks || {})) {
++        const n = G.Resonance.rank(older, d);
++        if (n > G.Resonance.rank(r, d)) r.resonance.ranks[d] = n;
++      }
++    }
+     // Lo conseguido nunca se pierde: unión de legendarios, arenas, objetos, logros...
+     for (const coll of ['legends', 'arenas', 'itemsFound', 'evoMoves', 'ach']) {
+       r[coll] = r[coll] || {};
+@@ -579,6 +589,7 @@ G.DB = (() => {
+       throw new Error('存檔中的統計資料不正確。');
+     if (s.profile && s.profile.title && !/^[\p{L}\p{N} _.-]{0,80}$/u.test(s.profile.title))
+       throw new Error('存檔中的稱號格式不正確。');
++    if (G.Resonance && !G.Resonance.valid(s)) throw new Error('存檔中的共鳴資料不正確。');
+     s.name = '訓練家';
+     return migrate(s, '訓練家');
+   }
+diff --git a/js/data/lang-zh-Hant.js b/js/data/lang-zh-Hant.js
+index 1a4d695..8acf832 100644
+--- a/js/data/lang-zh-Hant.js
++++ b/js/data/lang-zh-Hant.js
+@@ -554,7 +554,7 @@ if (G.I18n.lang === 'zh-Hant') G.I18n.add({
+   "Tiradas sin legendaria en {x}: {x} / {x}": "{x} 招募未出傳說次數：{x}／{x}",
+   "· A las {x} tiradas sin Legendaria en un banner, la siguiente lo es.": "· 同一地區連續 {x} 次未出傳說，下次必定獲得。",
+   "· La tirada ×10 garantiza al menos una Épica.": "· 十連抽至少保證一隻史詩寶可夢。",
+-  "· Los repetidos dan Pokémonedas (los shiny repetidos, el triple).": "· 重複夥伴轉換為金幣，重複異色可得三倍。",
++  "· Los repetidos dan Pokémonedas (los shiny repetidos, el triple).": "· 重複夥伴保留金幣回饋；史詩／傳說另提升共鳴並累積精華。",
+   "· Los tickets se consiguen jugando: algunos Pokémon los sueltan al caer, y los jefes y los legendarios de las grietas dan tickets ×10.": "· 抽獎券由冒險取得；部分敵人會掉落，首領與裂隙傳說可提供十連抽券。",
+   "Tirar ×1 ·": "招募一次 ·",
+   "Tirar ×10 ·": "招募十次 ·",
+@@ -2551,7 +2551,7 @@ if (G.I18n.lang === 'zh-Hant') G.I18n.add({
+   "Pulls without a legendary in {x}: {x} / {x}": "{x} 招募未出傳說次數：{x}／{x}",
+   "· After {x} pulls without a Legendary on a banner, the next one is.": "· 同一地區連續 {x} 次未出傳說，下次必定獲得。",
+   "· The ×10 pull guarantees at least one Epic.": "· 十連抽至少保證一隻史詩寶可夢。",
+-  "· Duplicates give PokéCoins (shiny duplicates, triple).": "· 重複夥伴轉換為金幣，重複異色可得三倍。",
++  "· Duplicates give PokéCoins (shiny duplicates, triple).": "· 重複夥伴保留金幣回饋；史詩／傳說另提升共鳴並累積精華。",
+   "· Tickets are earned by playing: some Pokémon drop them when defeated, and bosses and rift legendaries give ×10 tickets.": "· 抽獎券由冒險取得；部分敵人會掉落，首領與裂隙傳說可提供十連抽券。",
+   "Pull ×1 ·": "招募一次 ·",
+   "Pull ×10 ·": "招募十次 ·",
+diff --git a/js/entities/player.js b/js/entities/player.js
+index 0fb1139..21c4a55 100644
+--- a/js/entities/player.js
++++ b/js/entities/player.js
+@@ -8,7 +8,7 @@ G.Player = class Player {
+    * @param mon   entrada de G.DEX
+    * @param perks mejoras permanentes ya resueltas (ver data/upgrades.js)
+    */
+-  constructor(mon, perks = {}, shiny = false) {
++  constructor(mon, perks = {}, shiny = false, useResonance = true) {
+     this.mon = mon;
+     this.dex = mon.dex;
+     this.shiny = shiny && G.Sprites.hasShiny(mon.dex);
+@@ -30,6 +30,14 @@ G.Player = class Player {
+     this.hp = this.maxHp;
+     this.baseSpd = mon.spd;
+     this.baseAtk = mon.atk;
++    // Companion actors use their own guardian balance and inherit owner attack.
++    if (G.SOLO && useResonance && G.Resonance) {
++      const b = G.Resonance.bonus(G.DB?.save, mon.dex);
++      this.resonanceRank = b.rank;
++      this.baseAtk *= b.atk;
++      this.maxHp = Math.round(this.maxHp * b.hp); this.hp = this.maxHp;
++      this.cdMul *= b.cd; this.spdMul *= b.spd;
++    }
+ 
+     this.moves = [];           // todos los movimientos aprendidos
+     this.slots = [];           // huecos: cada uno, una lista de movimientos que se lanzan a la vez
+diff --git a/js/systems/gacha.js b/js/systems/gacha.js
+index 3041871..a3c0756 100644
+--- a/js/systems/gacha.js
++++ b/js/systems/gacha.js
+@@ -7,7 +7,7 @@
+  *   - la tirada ×10 trae al menos un 4★ o superior
+  *   - a las 70 tiradas sin 5★ en ese banner, el siguiente es 5★ seguro
+  * Shiny: 1 de cada 100 tiradas sale en su versión shiny.
+- * Repetidos: se convierten en Pokémonedas (los shiny repetidos, el triple).
++ * Duplicates retain coins; solo epic/legendary species also gain Resonance.
+  *
+  * Se tira con TICKETS (se consiguen jugando):
+  *   ×1   1 ticket
+@@ -17,6 +17,7 @@ G.Gacha = (() => {
+   /** ¿Qué gasta una tirada de n? → { t1, t10 } o null si no te llega. */
+   /** @param use  't1' (tickets normales) o 't10' (un ticket ×10, sólo para la ×10) */
+   function costOf(save, n, use = 't1') {
++    if (![1, 10].includes(n) || !['t1', 't10'].includes(use) || (use === 't10' && n !== 10)) return null;
+     const t = save.tickets || { t1: 0, t10: 0 };
+     if (n === 10 && use === 't10') return t.t10 >= 1 ? { t1: 0, t10: 1 } : null;
+     return t.t1 >= n ? { t1: n, t10: 0 } : null;
+@@ -78,6 +79,7 @@ G.Gacha = (() => {
+    *   { dex, rarity, shiny, isNew, refund }
+    */
+   function pull(save, n, gen = 1, use = 't1') {
++    if (!Number.isInteger(gen) || !BANNERS.some(b => b.gen === gen)) return null;
+     const cost = costOf(save, n, use);
+     if (!cost) return null;
+     save.tickets.t1 -= cost.t1;
+@@ -99,6 +101,7 @@ G.Gacha = (() => {
+       const mon = G.U.pick(list);
+       const shiny = G.Sprites.hasShiny(mon.dex) && (forceShiny > 0 ? (forceShiny--, true) : Math.random() < SHINY_RATE);
+ 
++      const ownedBefore = !!save.owned[mon.dex];
+       let isNew = false, refund = 0;
+       if (shiny) {
+         isNew = !save.shiny[mon.dex];
+@@ -111,7 +114,8 @@ G.Gacha = (() => {
+         else refund = REFUND[rarity];
+       }
+       save.coins += refund;
+-      out.push({ dex: mon.dex, rarity, shiny, isNew, refund });
++      const resonance = G.SOLO && ownedBefore ? G.Resonance.reward(save, mon.dex) : null;
++      out.push({ dex: mon.dex, rarity, shiny, isNew, refund, resonance });
+     }
+     save.stats.pulls = (save.stats.pulls || 0) + n;
+     return out;
+diff --git a/js/systems/guardian.js b/js/systems/guardian.js
+index ea64889..7cb965c 100644
+--- a/js/systems/guardian.js
++++ b/js/systems/guardian.js
+@@ -3,13 +3,19 @@ G.Guardian = (() => {
+   const LINES = [
+     { id: 'flame', stages: [4, 5, 6], times: [85, 205], color: '#ffa569', icon: 'fist',
+       name: '尾焰的約定', tag: '火力型 · 兩次進化', desc: '小火龍 → 火恐龍 → 噴火龍。成長後以扇形火焰清群，定期爆發熱風。',
+-      move: 'flamethrower', power: 3.4, interval: 1.15, boss: 248, bossName: '岩鎧追獵者', behavior: 'chase', special: 'fire' },
++      move: 'flamethrower', power: 3.8, interval: 1.05, boss: 248, bossName: '岩鎧追獵者', behavior: 'chase', special: 'fire' },
+     { id: 'wings', stages: [10, 11, 12], times: [55, 175], color: '#c4b3ff', icon: 'sprout',
+-      name: '破繭的勇氣', tag: '支援型 · 最快成長', desc: '綠毛蟲 → 鐵甲蛹 → 巴大蝶。進化後發射念力、減速敵人，並週期治療你和夥伴。',
+-      move: 'confusion', power: 3.2, interval: .9, boss: 169, bossName: '夜翼追獵者', behavior: 'charger', special: 'poison' },
++      name: '破繭的勇氣', tag: '支援型 · 最快成長', desc: '綠毛蟲 → 鐵甲蛹 → 巴大蝶。追蹤念力減速敵人；每 10 秒為附近的你回復 9% 生命，夥伴回復 15%。',
++      move: 'confusion', power: 3.2, interval: .9, specialInterval: 10, boss: 169, bossName: '夜翼追獵者', behavior: 'charger', special: 'poison' },
+     { id: 'tide', stages: [129, 130], times: [240], color: '#83cfff', icon: 'shield',
+       name: '逆流成龍', tag: '爆發型 · 耐心換取巨變', desc: '鯉魚王 → 暴鯉龍。需要守護較久，進化後以高壓水炮貫穿敵群，定期掀起震退浪潮。',
+-      move: 'hydro-pump', power: 6.2, interval: 1.55, boss: 405, bossName: '雷牙追獵者', behavior: 'ranged', special: 'electric' }
++      move: 'hydro-pump', power: 6.2, interval: 1.55, boss: 405, bossName: '雷牙追獵者', behavior: 'ranged', special: 'electric' },
++    { id: 'spark', stages: [172, 25, 26], times: [75, 195], color: '#ffe580', icon: 'type:electric',
++      name: '小小電光', tag: '連鎖型 · 分散敵群', desc: '皮丘 → 皮卡丘 → 雷丘。十萬伏特在敵人間跳躍並減速；每 10 秒以放電擊退身旁敵人。單體傷害較低，擅長對付分散敵群。',
++      move: 'thunderbolt', power: 3.3, interval: 1.1, specialInterval: 10, boss: 232, bossName: '重踏追獵者', behavior: 'chase', special: 'ground' },
++    { id: 'frost', stages: [220, 221, 473], times: [95, 220], color: '#a6e6f5', icon: 'shield',
++      name: '雪地裡的依靠', tag: '防護型 · 冰凍陣線', desc: '小山豬 → 長毛豬 → 象牙豬。冰凍光束貫穿並減速；每 12 秒震退近敵，為附近的你補至 12% 生命護盾、夥伴補至 15%。護盾不累加。',
++      move: 'ice-beam', power: 3.5, interval: 1.2, boss: 467, bossName: '熔焰追獵者', behavior: 'ranged', special: 'fire' }
+   ];
+   let s = null;
+   const mature = () => !!s?.pet && s.stage === s.line.stages.length - 1;
+@@ -17,7 +23,7 @@ G.Guardian = (() => {
+   function start(options) {
+     s = options.mode === 'guardian' && G.SOLO ? { elapsed: 0, chest: null, opened: false, offered: false,
+       pet: null, line: null, stage: 0, growth: 0, downs: 0, revives: 0, revive: 0, recallCd: 0,
+-      attackCd: 0, specialCd: 10, shots: 0, stuck: 0, wasRift: false,
++      attackCd: 0, specialCd: 10, shots: 0, shield: 0, stuck: 0, wasRift: false,
+       maturedAt: null, grace: 30, warning: null, boss: null, bossSkill: 5, bossPhase: 1,
+       bossDefeated: false, rewarded: false, continued: false, breather: 0 } : null;
+     if (s) G.Sprites.preload(LINES.flatMap(l => [...l.stages, l.boss]));
+@@ -34,7 +40,7 @@ G.Guardian = (() => {
+ 
+   function makePet(dex, p, old = null) {
+     const perks = G.Upgrades.perks(G.DB.upgradesOf(dex));
+-    const pet = new G.Player(G.DEX_BY[dex], perks);
++    const pet = new G.Player(G.DEX_BY[dex], perks, false, false);
+     Object.assign(pet, old ? { x: old.x, y: old.y } : safePoint(p, 45, pet.r));
+     pet.maxHp = Math.round(120 + pet.maxHp * (1 + s.stage * .35));
+     pet.hp = pet.maxHp; pet.invuln = 2;
+@@ -62,7 +68,9 @@ G.Guardian = (() => {
+     if (!pet || pet.invuln > 0 || !p || p.dead || G.Game.state !== 'playing') return;
+     const nearby = Math.hypot(pet.x - p.x, pet.y - p.y) <= 100;
+     const mult = type ? G.Types.mult(type, pet.mon.types) : 1;
+-    const taken = Math.max(1, damage * mult * (1 - pet.reduction) * (nearby ? .5 : .85));
++    const raw = Math.max(1, damage * mult * (1 - pet.reduction) * (nearby ? .5 : .85));
++    const absorbed = Math.min(s.shield, raw); s.shield -= absorbed;
++    const taken = raw - absorbed;
+     pet.hp = Math.max(0, pet.hp - taken); pet.invuln = .8; pet.flash = .15;
+     G.FX.dmgText(pet.x, pet.y - pet.bodyH - 12, '-' + Math.round(taken), '#ff9c9c');
+     if (!pet.hp) {
+@@ -91,6 +99,10 @@ G.Guardian = (() => {
+       s.maturedAt = s.elapsed; s.grace = 30; s.pet.tag = '並肩作戰';
+       const move = G.Moves.instance(s.line.move, 3);
+       if (s.line.id === 'wings') { move.slow = .4; move.pierce = 2; }
++      // Short cone formerly lost most hits by distance 180. Keep a fan, with
++      // enough flight time to cover the guardian's fighting position.
++      if (s.line.id === 'flame') { move.life *= 1.65; move.arc = .72; }
++      if (s.line.id === 'spark') move.slow = .35;
+       s.pet.moves = [move]; s.pet.slots = [[move]]; s.pet.active = 0;
+       G.Spawner.say(`${s.pet.mon.name} 已經能保護你了！先享受並肩作戰的力量。`, 4, true);
+     } else {
+@@ -130,16 +142,30 @@ G.Guardian = (() => {
+       }
+     }
+     if (s.specialCd > 0) return;
+-    s.specialCd = 12;
++    s.specialCd = s.line.specialInterval || 12;
+     if (s.line.id === 'wings') {
+-      if (Math.hypot(p.x - pet.x, p.y - pet.y) < 220) { p.heal(p.maxHp * .07); pet.heal(pet.maxHp * .12); }
++      if (Math.hypot(p.x - pet.x, p.y - pet.y) < 220) { p.heal(p.maxHp * .09); pet.heal(pet.maxHp * .15); }
+       G.FX.ring(pet.x, pet.y, 8, 150, '#a4edc1', .6, 4);
+     } else if (s.line.id === 'flame') G.Combat.assist(pet, G.Moves.instance('heat-wave', 3), 3.5);
+-    else {
++    else if (s.line.id === 'tide') {
++      // Preserve the existing neutral wave damage; record it alongside beams.
+       G.FX.ring(pet.x, pet.y, 8, 170, '#88d6ff', .55, 5);
+       for (const e of G.EnemyMgr.queryCircle(pet.x, pet.y, 170)) {
+         if (e.dead) continue;
+-        e.hurt(70 * p.atk, '#88d6ff', e.x - pet.x, e.y - pet.y, 180); e.applySlow(.5, 2);
++        const damage = 70 * p.atk;
++        e.hurt(damage, '#88d6ff', e.x - pet.x, e.y - pet.y, 180); e.applySlow(.5, 2);
++        p.dmgDealt += damage; p.onDealt(damage);
++      }
++    } else if (s.line.id === 'spark') {
++      const wave = Object.assign(G.Moves.instance('discharge', 1), { radius: 150, dmg: 30, slow: .55, knock: 120 });
++      G.Combat.assist(pet, wave, 1);
++    } else if (s.line.id === 'frost') {
++      const wave = Object.assign(G.Moves.instance('powder-snow', 1), { radius: 150, dmg: 25, slow: .65, knock: 150 });
++      G.Combat.assist(pet, wave, 1);
++      if (Math.hypot(p.x - pet.x, p.y - pet.y) < 220) {
++        if (G.Expedition?.run) G.Expedition.run.shield = Math.max(G.Expedition.run.shield, p.maxHp * .12);
++        s.shield = Math.max(s.shield, pet.maxHp * .15);
++        G.FX.ring(p.x, p.y, 10, 65, s.line.color, .6, 4);
+       }
+     }
+   }
+diff --git a/js/systems/resonance.js b/js/systems/resonance.js
+new file mode 100644
+index 0000000..b39aaf2
+--- /dev/null
++++ b/js/systems/resonance.js
+@@ -0,0 +1,61 @@
++/* Permanent, species-specific duplicate growth. Normal/shiny share one rank.
++ * Pure save operations: caller commits once after the whole draw/exchange.
++ * No historical copies are inferred from an old save's total pull counter. */
++G.Resonance = (() => {
++  const MAX = 5;
++  const COST = { 4: { grow: 12, recruit: 40 }, 5: { grow: 36, recruit: 120 } };
++  const eligible = dex => [4, 5].includes(G.DEX_BY[dex]?.rarity);
++  const rank = (save, dex) => eligible(dex) && save?.owned?.[dex]
++    ? Math.min(MAX, Math.max(0, Math.floor(Number(save.resonance?.ranks?.[dex]) || 0))) : 0;
++  function normalize(save) {
++    const old = save.resonance;
++    const ranks = {};
++    if (old?.ranks && typeof old.ranks === 'object') for (const dex of Object.keys(old.ranks)) {
++      if (/^\d+$/.test(dex) && eligible(dex) && save.owned?.[dex]) ranks[dex] = rank(save, dex);
++    }
++    save.resonance = { ranks, essence: Number.isSafeInteger(old?.essence) && old.essence >= 0 ? Math.min(1e12, old.essence) : 0 };
++    return save.resonance;
++  }
++  function valid(save) {
++    const r = save.resonance;
++    if (r == null) return true;
++    if (typeof r !== 'object' || Array.isArray(r) || !Number.isSafeInteger(r.essence) || r.essence < 0 || r.essence > 1e12
++      || !r.ranks || typeof r.ranks !== 'object' || Array.isArray(r.ranks)) return false;
++    return Object.entries(r.ranks).every(([dex, n]) => /^\d+$/.test(dex) && eligible(dex) && save.owned?.[dex]
++      && Number.isInteger(n) && n >= 0 && n <= MAX);
++  }
++  function bonus(save, dex) {
++    const n = rank(save, dex);
++    return { rank: n, atk: 1 + n * .04, hp: 1 + n * .03, cd: n >= 3 ? .95 : 1, spd: n >= 5 ? 1.05 : 1 };
++  }
++  function reward(save, dex) {
++    if (!eligible(dex) || !save.owned?.[dex]) return null;
++    const r = normalize(save), before = rank(save, dex), after = Math.min(MAX, before + 1);
++    const essence = (G.DEX_BY[dex].rarity === 5 ? 3 : 1) * (before === MAX ? 3 : 1);
++    r.ranks[dex] = after; r.essence = Math.min(1e12, r.essence + essence);
++    return { before, after, essence, capped: before === MAX };
++  }
++  function offer(save, dex) {
++    if (!eligible(dex) || !G.SPRITE_META[dex]) return null;
++    const owned = !!save.owned?.[dex], n = rank(save, dex);
++    if (owned && n >= MAX) return null;
++    const kind = owned ? 'grow' : 'recruit', cost = COST[G.DEX_BY[dex].rarity][kind];
++    return { kind, cost, next: owned ? n + 1 : 0, affordable: (save.resonance?.essence || 0) >= cost };
++  }
++  function exchange(save, dex) {
++    const o = offer(save, dex);
++    if (!o?.affordable) return null;
++    const r = normalize(save);
++    r.essence -= o.cost;
++    if (o.kind === 'grow') r.ranks[dex] = o.next;
++    else save.owned[dex] = { at: Date.now(), from: 'resonance' };
++    // Spending essence is not a gacha draw: no gold, essence refund or pity change.
++    return o;
++  }
++  function summary(save, dex) {
++    const b = bonus(save, dex);
++    if (!b.rank) return '每階攻擊 +4%、生命 +3%；+3 冷卻縮短 5%，+5 移速 +5%。';
++    return `攻擊 +${b.rank * 4}% · 生命 +${b.rank * 3}%${b.rank >= 3 ? ' · 冷卻 −5%' : ''}${b.rank >= 5 ? ' · 移速 +5%' : ''}`;
++  }
++  return { MAX, COST, eligible, rank, normalize, valid, bonus, reward, offer, exchange, summary };
++})();
+diff --git a/js/ui/expedition-ui.js b/js/ui/expedition-ui.js
+index 32d0283..3f31097 100644
+--- a/js/ui/expedition-ui.js
++++ b/js/ui/expedition-ui.js
+@@ -29,7 +29,7 @@ G.ExpeditionUI = (() => {
+     if (!known.some(r => r.id === options.focus)) options.focus = '';
+     box.innerHTML = `<div class="exp-heading"><div><p class="exp-eyebrow">SOLO EXPEDITION / 單人遠征</p><h2>下一段冒險，由你出發</h2><p class="sub">選擇作戰風格，讓這一局走出不同的路。</p></div><div id="exp-partner"></div></div>
+       <div class="exp-record"><span>遠征通關 <b>${s.stats.expeditionWins || 0}</b></span><span>最佳評分 <b>${s.stats.expeditionBest || 0}</b></span><span>遺物圖鑑 <b>${known.length}/12</b></span></div>
+-      <div class="exp-mastery"><div><strong>${G.DEX_BY[s.partner].name} · ${mastery.name} ${'★'.repeat(mastery.rank)}</strong><small>${mastery.next ? `熟練度 ${mastery.xp} / ${mastery.next} · 升階獎勵 120 金幣` : '已達最高熟練階級'} · 本局遺物重選 ${1 + Math.min(2, mastery.rank)} 次</small></div><progress aria-label="夥伴熟練度" max="${mastery.next ? mastery.next - mastery.base : 1}" value="${mastery.next ? mastery.xp - mastery.base : 1}"></progress></div>
++      <div class="exp-mastery"><div><strong>${G.DEX_BY[s.partner].name}${G.ResonanceUI.badge(s.partner)} · ${mastery.name} ${'★'.repeat(mastery.rank)}</strong><small>${mastery.next ? `熟練度 ${mastery.xp} / ${mastery.next} · 升階獎勵 120 金幣` : '已達最高熟練階級'} · 本局遺物重選 ${1 + Math.min(2, mastery.rank)} 次</small></div><progress aria-label="夥伴熟練度" max="${mastery.next ? mastery.next - mastery.base : 1}" value="${mastery.next ? mastery.xp - mastery.base : 1}"></progress></div>
+       <h3 class="exp-label">01 / 冒險方式</h3><div class="exp-options exp-modes">
+       ${optionButton('mode', 'guardian', '守護夥伴', '從弱小幼體到並肩作戰。救出夥伴、陪牠進化，再一起擊敗追獵者。', 'heart', '#afe4bd')}
+       ${optionButton('mode', 'expedition', '十二分鐘遠征', '遺物、途中委託、閃避與清場大絕。擊敗 12:00 出現的最終首領，即可領獎撤離或繼續生存。')}
+@@ -144,7 +144,7 @@ G.ExpeditionUI = (() => {
+     } else if (kind === 'prepare') {
+       if (G.Input.tap('escape')) G.Flow.goMenu();
+     } else {
+-      for (let i = 0; i < (kind === 'dash' ? 4 : 3); i++) if (G.Input.tap('digit' + (i + 1)) || G.Input.tap('numpad' + (i + 1))) pick(i);
++      for (let i = 0; i < (kind === 'clear' ? 2 : offered.length); i++) if (G.Input.tap('digit' + (i + 1)) || G.Input.tap('numpad' + (i + 1))) pick(i);
+       if (G.Input.tap('keyr')) reroll();
+     }
+     return true;
+diff --git a/js/ui/gacha-ui.js b/js/ui/gacha-ui.js
+index 9c75762..4915675 100644
+--- a/js/ui/gacha-ui.js
++++ b/js/ui/gacha-ui.js
+@@ -61,9 +61,12 @@ G.GachaUI = (() => {
+       `<div><span>${G.Icons.html('shiny', 12)} Shiny</span><span>1%</span></div>
+        <p class="note">· La tirada ×10 garantiza al menos una Épica.<br>
+        · A las ${G.Gacha.PITY_5} tiradas sin Legendaria en un banner, la siguiente lo es.<br>
+-       · Los repetidos dan Pokémonedas (los shiny repetidos, el triple).<br>
++       · 重複夥伴保留金幣回饋；史詩／傳說另升共鳴 +1，最高 +5。<br>
++       · 每次重複史詩／傳說另得 1／3 精華；已滿階改得 3／9。普通與異色共用升階。<br>
++       · 首次異色仍會解鎖；若已擁有同種普通版本，同時獲得共鳴回饋。<br>
+        · Los tickets se consiguen jugando: algunos Pokémon los sueltan al caer, y
+-         los jefes y los legendarios de las grietas dan tickets ×10.</p>`;
++         los jefes y los legendarios de las grietas dan tickets ×10.</p>` + G.ResonanceUI.workshop();
++    G.ResonanceUI.bindWorkshop(refresh);
+ 
+     const t = s.tickets;
+     $('cost-1').innerHTML = `${G.Icons.html('ticket', 18)} 1`;
+@@ -108,7 +111,7 @@ G.GachaUI = (() => {
+       const tag = r.isNew
+         ? `<span class="new">${r.shiny ? '¡SHINY NUEVO!' : '¡NUEVO!'}</span>`
+         : `Repetido · <span class="coin"></span> +${r.refund}`;
+-      c.insertAdjacentHTML('beforeend', `<b>${r.shiny ? G.Icons.html('shiny', 12) + ' ' : ''}${mon.name}</b><div class="tag">${tag}</div>`);
++      c.insertAdjacentHTML('beforeend', `<b>${r.shiny ? G.Icons.html('shiny', 12) + ' ' : ''}${mon.name}</b><div class="tag">${tag}</div>${G.ResonanceUI.reward(r)}`);
+       out.appendChild(c);
+       G.Audio.sfx('reveal', { rarity: r.rarity });
+       await wait(n === 10 ? 150 : 0);
+diff --git a/js/ui/guardian-ui.js b/js/ui/guardian-ui.js
+index 519488f..0d6c805 100644
+--- a/js/ui/guardian-ui.js
++++ b/js/ui/guardian-ui.js
+@@ -9,7 +9,7 @@ G.GuardianUI = (() => {
+     box.querySelectorAll('[data-guardian-dex]').forEach(el => el.appendChild(G.UI.spriteCanvas(Number(el.dataset.guardianDex), 58, 54, { lively: true, scale: 1.5 })));
+   }
+   function prepare() {
+-    return `<div class="guardian-intro"><strong>${G.Icons.html('heart', 20)} 這次，有一位夥伴等你帶回家。</strong><p>01:00 出現守護寶箱。救出幼體，待在牠身邊累積成長；完全進化後，牠會開始保護你。迎戰追獵者，讓整條進化系加入收藏。</p><div class="guardian-lines">${G.Guardian.LINES.map(l => `<div style="--exp-color:${l.color}">${stages(l)}<b>${l.name}</b><small>守護 ${clock(l.times.at(-1))} 成為完全體${G.DB.save.stats['guardianBond_' + l.id] ? ' · 已締結羈絆' : ''}</small></div>`).join('')}</div><p class="note">倒下不會永久失去夥伴；靠近守住 3 秒即可救起。按 G／召回按鈕可帶牠回到身邊，冷卻 14 秒。遠離、倒下或進入裂隙時，成長暫停。</p></div>`;
++    return `<div class="guardian-intro"><strong>${G.Icons.html('heart', 20)} 這次，有一位夥伴等你帶回家。</strong><p>01:00 出現守護寶箱。救出幼體，待在牠身邊累積成長；完全進化後，牠會開始保護你。迎戰追獵者，讓整條進化系加入收藏。</p><div class="guardian-lines">${G.Guardian.LINES.map(l => `<div style="--exp-color:${l.color}">${stages(l)}<b>${l.name}</b><small>${l.tag}</small><small>守護 ${clock(l.times.at(-1))} 成為完全體${G.DB.save.stats['guardianBond_' + l.id] ? ' · 已締結羈絆' : ''}</small></div>`).join('')}</div><p class="note">倒下不會永久失去夥伴；靠近守住 3 秒即可救起。按 G／召回按鈕可帶牠回到身邊，冷卻 14 秒。遠離、倒下或進入裂隙時，成長暫停。</p></div>`;
+   }
+   function choice(type, list) {
+     if (type === 'guardian') return `<p class="exp-eyebrow">A PROMISE TO PROTECT / 守護的約定</p><h2>牠還很弱小，但牠相信你。</h2><p class="sub">選一位同行夥伴。幼體不攻擊；守住這段成長時間，見證牠的蛻變。戰鬥已暫停。</p><div class="exp-relic-grid guardian-choices">${list.map((l, i) => `<button class="exp-relic" data-choice="${i}" style="--exp-color:${l.color}"><span class="exp-relic-top">${stages(l)}<kbd>${i + 1}</kbd></span><small>${l.tag}</small><h3>${l.name}</h3><p>${l.desc}</p><span class="guardian-growth">${l.times.map((t, n) => `${clock(t)} ${G.DEX_BY[l.stages[n + 1]].name}`).join(' · ')}</span><span class="exp-take">我會保護你 →</span></button>`).join('')}</div><p class="note">牠在你 220 範圍內才會成長。靠近可減少牠受到的傷害；G 召回也能回復 18% 夥伴生命。全隊永久強化同樣適用。</p>`;
+@@ -36,7 +36,7 @@ G.GuardianUI = (() => {
+     ctx.fillStyle = '#e8e1c8';
+     if (pet) {
+       const dead = pet.dead;
+-      ctx.fillText(dead ? `救援 ${s.revive.toFixed(1)} / 3 秒` : `生命 ${Math.ceil(pet.hp)} / ${pet.maxHp}`, x, y + 16, width - 90);
++      ctx.fillText(dead ? `救援 ${s.revive.toFixed(1)} / 3 秒` : `生命 ${Math.ceil(pet.hp)} / ${pet.maxHp}${s.shield > 0 ? ' · 盾 ' + Math.ceil(s.shield) : ''}`, x, y + 16, width - 90);
+       ctx.fillStyle = '#384550'; ctx.fillRect(x, y + 21, width - 90, 4);
+       ctx.fillStyle = dead ? '#ffd596' : s.line.color; ctx.fillRect(x, y + 21, (width - 90) * Math.min(1, dead ? s.revive / 3 : pet.hp / pet.maxHp), 4);
+       ctx.fillStyle = '#c9deed';
+@@ -57,7 +57,7 @@ G.GuardianUI = (() => {
+         text = s.chest.open > 0 ? `開啟中 ${s.chest.open.toFixed(1)} / 3 秒` : `守護寶箱在${dir} · 靠近停留 3 秒`;
+       }
+       ctx.fillText(text, x, y + 20, width - 12);
+-      ctx.fillStyle = '#a5bbc8'; ctx.fillText('小火龍 / 綠毛蟲 / 鯉魚王', x, y + 39, width - 12);
++      ctx.fillStyle = '#a5bbc8'; ctx.fillText('5 位夥伴 · 火力 / 治療 / 爆發 / 連鎖 / 防護', x, y + 39, width - 12);
+     }
+     ctx.fillStyle = '#f5d991'; ctx.fillText(goal(s), x, y + 57, width - 12);
+     const trial = G.ExpeditionTrials.state.active, c = r.contract;
+diff --git a/js/ui/menu.js b/js/ui/menu.js
+index 16e5096..6c07546 100644
+--- a/js/ui/menu.js
++++ b/js/ui/menu.js
+@@ -42,7 +42,7 @@ G.MenuUI = (() => {
+     G.UI.sprite($('menu-partner'), mon.dex, { lively: true, scale: 4, hero: true, shiny });
+     $('menu-partner').style.setProperty('--stage-c', shiny ? '#9ae6ff' : G.U.TYPE_COLOR[mon.types[0]]);
+     $('menu-partner').classList.toggle('shiny', shiny);
+-    $('menu-partner-name').innerHTML = mon.name + (shiny ? ' ' + G.Icons.html('shiny', 24) : '');
++    $('menu-partner-name').innerHTML = mon.name + G.ResonanceUI.badge(mon.dex) + (shiny ? ' ' + G.Icons.html('shiny', 24) : '');
+     $('menu-partner-info').innerHTML = G.UI.typeChips(mon.types) + ' ' + G.UI.stars(mon.rarity);
+ 
+     const owned = Object.keys(s.owned).filter(d => G.DEX_BY[d]).length;
+@@ -145,7 +145,7 @@ G.MenuUI = (() => {
+       else if (sh) cell.insertAdjacentHTML('beforeend', `<span class="badge-r" title="Tienes su shiny">${G.Icons.html('shiny', 12)}</span>`);
+       const useShiny = sh && p.dex === s.partner && s.partnerShiny;
+       cell.appendChild(G.UI.spriteCanvas(p.dex, 92, 80, { scale: 2, silhouette: !own, shadow: own, shiny: useShiny }));
+-      cell.insertAdjacentHTML('beforeend', `<b>${own ? p.name : '???'}</b>${G.UI.stars(p.rarity, 9)}`);
++      cell.insertAdjacentHTML('beforeend', `<b>${own ? p.name + G.ResonanceUI.badge(p.dex) : '???'}</b>${G.UI.stars(p.rarity, 9)}`);
+       cell.onclick = () => {
+         dexSel = p.dex;
+         grid.querySelectorAll('.cell').forEach(c => c.classList.remove('on'));
+@@ -183,11 +183,13 @@ G.MenuUI = (() => {
+           <button class="${viewShiny ? 'on' : ''}" data-v="1">${G.Icons.html('shiny', 12)} Shiny</button></div>` : ''}
+       <div class="center">
+         <div style="color:var(--muted);font-size:13px">Nº ${String(p.dex).padStart(3, '0')} · ${GEN_NAMES[p.gen - 1]}</div>
+-        <h3>${own ? p.name : '???'}</h3>
++        <h3>${own ? p.name + G.ResonanceUI.badge(dex) : '???'}</h3>
+         <div style="color:${G.Gacha.RARITY_COLOR[p.rarity]}">${G.UI.stars(p.rarity, 24)} ${G.Gacha.RARITY_NAME[p.rarity]}</div>
+         <div style="margin:6px 0">${own ? G.UI.typeChips(p.types) : ''}</div>
+       </div>
+       ${own ? `
++        ${G.ResonanceUI.detail(dex)}
++        <small>以下為基礎數值（共鳴加成另計）</small>
+         ${bar('Vida', p.hp, max.hp, p.hp)}
+         ${bar('Ataque', p.atk, max.atk, '×' + p.atk.toFixed(2))}
+         ${bar('Velocidad', p.spd, max.spd, p.spd)}
+@@ -206,6 +208,7 @@ G.MenuUI = (() => {
+     box.querySelectorAll('.seg button').forEach(b => {
+       b.onclick = () => { viewShiny = b.dataset.v === '1'; showDetail(dex); };
+     });
++    G.ResonanceUI.bindDetail(box, () => { renderGrid(); showDetail(dex); });
+     const pick = $('dex-pick');
+     if (pick) pick.onclick = () => {
+       s.partner = dex;
+diff --git a/js/ui/resonance-ui.js b/js/ui/resonance-ui.js
+new file mode 100644
+index 0000000..7359a76
+--- /dev/null
++++ b/js/ui/resonance-ui.js
+@@ -0,0 +1,58 @@
++/* Visible progression and a deterministic alternative to waiting for one dupe. */
++G.ResonanceUI = (() => {
++  let selected = 0;
++  const R = () => G.Resonance;
++  function badge(dex) {
++    const n = R().rank(G.DB.save, dex);
++    return n ? ` <span class="resonance-badge" title="共鳴升階 +${n}">+${n}</span>` : '';
++  }
++  function detail(dex) {
++    if (!R().eligible(dex)) return '';
++    const s = G.DB.save, n = R().rank(s, dex), o = R().offer(s, dex);
++    return `<div class="resonance-detail"><strong>共鳴 +${n} / +${R().MAX}</strong><p>${R().summary(s,dex)}</p><small>普通／異色共用；加成用於你操作這隻寶可夢時。${n < 3 ? '+3 解鎖冷卻縮短 5%。' : n < 5 ? '+5 解鎖移速 +5%。' : '已滿階，再次重複可獲得更多精華。'}</small>${o ? `<button type="button" class="btn small resonance-grow" data-grow="${dex}" ${o.affordable ? '' : 'disabled'}>培養至 +${o.next} · ${o.cost} 精華</button>` : ''}<small>持有共鳴精華：${s.resonance?.essence || 0}</small></div>`;
++  }
++  function bindDetail(box, refresh) {
++    const button = box.querySelector('[data-grow]');
++    if (button) button.onclick = () => {
++      const result = R().exchange(G.DB.save, Number(button.dataset.grow));
++      if (!result) return;
++      G.DB.commit(true); G.Audio.sfx('legend'); refresh();
++    };
++  }
++  function workshop() {
++    const s = G.DB.save;
++    const pool = G.DEX.filter(p => R().offer(s, p.dex));
++    if (!pool.some(p => p.dex === selected)) selected = pool.find(p => p.dex === s.partner)?.dex || pool[0]?.dex || 0;
++    return `<details class="resonance-workshop"><summary>共鳴工坊 · 精華 ${s.resonance?.essence || 0}</summary><p>重複史詩、傳說都能累積精華。你可以指定培養，也可以存起來招募尚未擁有的夥伴。</p><label for="resonance-target">選擇目標（所有世代）</label><select id="resonance-target">${pool.map(p => {
++      const o = R().offer(s,p.dex);
++      return `<option value="${p.dex}" ${selected === p.dex ? 'selected' : ''}>${p.rarity === 5 ? '傳說' : '史詩'} · ${p.name} · ${o.kind === 'grow' ? '培養 +' + o.next : '首次招募'} · ${o.cost} 精華</option>`;
++    }).join('')}</select><p id="resonance-preview" aria-live="polite"></p><button type="button" class="btn gold" id="resonance-exchange">指定培養／招募</button><small>培養：史詩 12／傳說 36；首次招募：史詩 40／傳說 120。招募得到普通版本，從 +0 開始。兌換不消耗招募券、不影響保底。</small></details>`;
++  }
++  function bindWorkshop(refresh) {
++    const select = document.getElementById('resonance-target'), button = document.getElementById('resonance-exchange');
++    if (!select || !button) return;
++    const update = () => {
++      selected = Number(select.value);
++      const s = G.DB.save, o = R().offer(s,selected);
++      document.getElementById('resonance-preview').textContent = !o ? '所有史詩與傳說都已滿階！精華會繼續保留。' : `${G.DEX_BY[selected].name} · ${o.kind === 'grow' ? '共鳴 +' + R().rank(s,selected) + ' → +' + o.next : '加入收藏（普通版本）'}${o.affordable ? '' : ` · 還差 ${o.cost - (s.resonance?.essence || 0)} 精華`}`;
++      button.disabled = !o?.affordable;
++      button.textContent = o ? `${o.kind === 'grow' ? '培養至 +' + o.next : '招募 ' + G.DEX_BY[selected].name} · ${o.cost} 精華` : '已全部滿階';
++    };
++    select.onchange = update; update();
++    button.onclick = () => {
++      // Re-read cost/rank at click time, then commit before refreshing the UI.
++      const result = R().exchange(G.DB.save,selected);
++      if (!result) { update(); return; }
++      G.Progress.checkAch(); G.DB.commit(true); G.Audio.sfx('legend');
++      G.UI.toast(`${G.DEX_BY[selected].name}${result.kind === 'grow' ? ' 共鳴 +' + result.next : ' 已加入收藏'}`);
++      refresh(); document.querySelector('.resonance-workshop').open = true;
++    };
++  }
++  function reward(r) {
++    if (!r.resonance) return '';
++    const a = r.resonance;
++    const milestone = a.after !== a.before && a.after === 3 ? '冷卻 −5% 解鎖' : a.after !== a.before && a.after === 5 ? '移速 +5% 解鎖' : '';
++    return `<div class="resonance-reward"><strong>${a.capped ? '共鳴 +5 · 滿階回饋' : `共鳴 +${a.before} → +${a.after}`}</strong>${a.capped ? '' : '<span>攻擊 +4% · 生命 +3%</span>'}${milestone ? `<span>${milestone}</span>` : ''}<span>共鳴精華 +${a.essence}</span></div>`;
++  }
++  return { badge, detail, bindDetail, workshop, bindWorkshop, reward };
++})();
+diff --git a/tools/check-expedition.mjs b/tools/check-expedition.mjs
+index 0f280a5..0a81ea8 100644
+--- a/tools/check-expedition.mjs
++++ b/tools/check-expedition.mjs
+@@ -333,7 +333,7 @@ for (const line of H.LINES) {
+   if (target.hp < 10000) assert.ok(p.dmgDealt > damageBefore);
+   assert.ok(G.GuardianUI.choice('guardian', H.LINES).includes('我會保護你'));
+ }
+-checks.push('all three final forms cast actual attacks and reuse local species/move data');
++checks.push('all five final forms cast actual attacks and reuse local species/move data');
+ 
+ // Controlled boss clock: allow a power moment, wait for other bosses, warn, then hunt.
+ enemies = []; let otherBoss = true, spawned = 0;
+@@ -359,7 +359,7 @@ assert.equal(H.prompt(p), false); assert.equal(p.coins, coinsBefore + 250);
+ assert.equal(G.DB.save.stats.guardianBonds, 1); assert.equal(H.snapshot().completed, true);
+ assert.ok(G.GuardianUI.choice('guardian-clear', []).includes('已加入收藏'));
+ const guardianSave = G.DB.parseBackup(JSON.stringify({ format: 'pokesurvivor-solo', version: 1, save: G.DB.save }));
+-assert.equal(guardianSave.stats.guardianBonds, 1); assert.ok(guardianSave.owned[130]);
++assert.equal(guardianSave.stats.guardianBonds, 1); assert.ok(guardianSave.owned[H.state.line.stages.at(-1)]);
+ const guardianResult = E.settle(guardianSave); assert.equal(guardianResult.guardian.completed, true);
+ player({ mode: 'classic' }); assert.equal(H.active, false); assert.equal(H.actor(), null);
+ checks.push('evolution grace/boss warning/enrage, rescue before reward, collection/save/settlement and classic reset');
+@@ -440,5 +440,36 @@ checks.push('existing mission progress/claims/reroll survive 5+3 expansion, no d
+ 
+ }
+ 
++// 0.7 guardian roles: real specials and damage paths, in addition to all-form casting above.
++{
++function matureGuardian(id) {
++  const pl = player({ mode: 'guardian' }); H.state.opened = true; H.recruit(id,pl);
++  for (const time of H.state.line.times) { H.state.growth=time; H.update(.001,pl); }
++  H.state.grace=999; H.state.specialCd=0; return pl;
++}
++p = matureGuardian('frost'); pet=H.state.pet;
++p.hp=p.maxHp/2; E.run.shield=0; H.update(.01,p);
++assert.equal(E.run.shield,p.maxHp*.12); assert.equal(H.state.shield,pet.maxHp*.15);
++const petShield=H.state.shield; H.state.specialCd=0; H.update(.01,p);
++assert.equal(H.state.shield,petShield); assert.equal(E.run.shield,p.maxHp*.12);
++E.run.shield=p.maxHp*.4; H.state.specialCd=0; H.update(.01,p);assert.equal(E.run.shield,p.maxHp*.4);
++pet.invuln=0; const petHp=pet.hp; H.hurt(10);assert.equal(pet.hp,petHp);assert.ok(H.state.shield<petShield);
++H.state.specialCd=5;G.Game.state='paused';H.update(12,p);assert.equal(H.state.specialCd,5);
++G.Game.state='playing';G.Rift.inArena=true;H.update(12,p);assert.equal(H.state.specialCd,5);G.Rift.inArena=false;
++checks.push('ice guardian shields absorb damage, top up without stacking or shrinking stronger shields, and pause in menus/rifts');
++
++p = matureGuardian('wings');pet=H.state.pet; pet.x=p.x;pet.y=p.y;p.hp=p.maxHp/2;pet.hp=pet.maxHp/2;
++const beforeHeal=p.hp;H.update(.01,p);assert.equal(p.hp,beforeHeal+p.maxHp*.09);assert.equal(H.state.specialCd,10);
++H.state.specialCd=0;pet.x=p.x+350;const outOfRangeHp=p.hp;H.update(.001,p);assert.equal(p.hp,outOfRangeHp);
++checks.push('butterfly heals 9% each 10 seconds only while nearby');
++
++p = matureGuardian('spark');pet=H.state.pet;let slowed=0;
++enemies=[0,1,2].map(i=>foe(10000,{id:101+i,x:pet.x+60+i*25,y:pet.y,r:12,bodyH:24,applySlow:()=>slowed++,applyBurn:noop,applyPoison:noop}));
++H.update(.01,p);assert.ok(enemies.every(e=>e.hp<10000));assert.ok(slowed>=3);
++const choiceHtml=G.GuardianUI.choice('guardian',H.LINES);
++assert.equal((choiceHtml.match(/data-choice=/g)||[]).length,5);
++checks.push('electric guardian chains and slows multiple targets; choice UI offers five families');
++}
++
+ console.log(JSON.stringify({ ok: true, checks, levelUpsFromContracts: levels, networkRequests: 0,
+   limitation: 'VM mechanics integration; no real browser, touch or full-run balance validation.' }, null, 2));
+diff --git a/tools/check-resonance.mjs b/tools/check-resonance.mjs
+new file mode 100644
+index 0000000..bd35c34
+--- /dev/null
++++ b/tools/check-resonance.mjs
+@@ -0,0 +1,96 @@
++// Real DB, gacha and player progression in isolated memory, never player saves.
++import fs from 'node:fs';
++import path from 'node:path';
++import vm from 'node:vm';
++import assert from 'node:assert/strict';
++import { fileURLToPath } from 'node:url';
++const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
++const memory = new Map(), noop = () => {};
++const math = Object.create(Math); math.random = () => .999;
++const G = { SOLO:true, T:s=>s, Settings:{get:()=>false},
++  Sprites:{ Animator:class {},bodyRadius:()=>12,bodyHeight:()=>24,hasShiny:()=>true },
++  Weather:{speedFor:()=>1},World:{liquidEffect:()=>({})} };
++const ctx = vm.createContext({ G,window:{G}, Math:math,Date,console,setTimeout,clearTimeout,
++  document:{addEventListener:noop},addEventListener:noop,dispatchEvent:noop,CustomEvent:class {},
++  navigator:{onLine:true},localStorage:{getItem:k=>memory.get(k)||null,setItem:(k,v)=>memory.set(k,v),removeItem:k=>memory.delete(k)} });
++const load = name => vm.runInContext(fs.readFileSync(path.join(root,'js',name+'.js'),'utf8'),ctx,{filename:name});
++for (const p of ['core/util','data/pokedex','data/sprites-meta','data/types','data/upgrades','systems/resonance','core/db','entities/player','systems/gacha','ui/resonance-ui']) load(p);
++await G.DB.ready();
++const s=G.DB.save,R=G.Resonance,checks=[];
++s.tickets.t1=100;s.coins=500;
++const first=G.Gacha.pull(s,1)[0], dex=first.dex;
++assert.equal(first.rarity,5);assert.equal(first.isNew,true);assert.equal(first.resonance,null);assert.equal(R.rank(s,dex),0);
++const second=G.Gacha.pull(s,1)[0];
++assert.equal(second.refund,300);assert.equal(second.resonance.after,1);assert.equal(s.coins,800);assert.equal(s.resonance.essence,3);
++const ten=G.Gacha.pull(s,10);
++assert.deepEqual(Array.from(ten.slice(0,4),r=>r.resonance.after),[2,3,4,5]);
++assert.ok(ten.slice(4).every(r=>r.resonance.capped&&r.resonance.essence===9));
++assert.equal(R.rank(s,dex),5);assert.equal(s.resonance.essence,69);assert.equal(s.tickets.t1,88);
++checks.push('real single/ten pulls: first acquisition, coins, sequential ranks, cap and overflow');
++
++// First shiny of a previously owned species gives both unlock and growth.
++s.resonance.ranks[dex]=1;G.Gacha.debugForceShiny(1);
++const shiny=G.Gacha.pull(s,1)[0];
++assert.equal(shiny.shiny,true);assert.equal(shiny.isNew,true);assert.equal(shiny.resonance.after,2);assert.equal(shiny.refund,0);
++G.Gacha.debugForceShiny(1);const shinyAgain=G.Gacha.pull(s,1)[0];
++assert.equal(shinyAgain.refund,900);assert.equal(shinyAgain.resonance.after,3);
++assert.ok(G.ResonanceUI.reward(shinyAgain).includes('冷卻 −5% 解鎖'));
++const freshSave=JSON.parse(JSON.stringify(s));freshSave.owned={};freshSave.shiny={};freshSave.resonance={ranks:{},essence:0};
++G.Gacha.debugForceShiny(1);const freshShiny=G.Gacha.pull(freshSave,1)[0];
++assert.equal(freshShiny.isNew,true);assert.equal(freshShiny.resonance,null);assert.equal(R.rank(freshSave,freshShiny.dex),0);
++checks.push('normal/shiny share growth; first shiny keeps unlock; first-ever species remains +0');
++
++math.random=()=>.97;const epic=G.Gacha.pull(s,1)[0];
++assert.equal(epic.rarity,4);assert.equal(epic.resonance,null);
++assert.equal(G.Gacha.pull(s,1)[0].resonance.essence,1);
++math.random=()=>.1;const common=G.Gacha.pull(s,1)[0];
++const commonDupe=G.Gacha.pull(s,1)[0];assert.equal(commonDupe.refund,15);assert.equal(commonDupe.resonance,null);
++const unchanged=JSON.stringify(s);
++for (const args of [[-1,1],[0,1],[2,1],[10,999],[1,1,'t10']]) assert.equal(G.Gacha.pull(s,...args),null);
++assert.equal(JSON.stringify(s),unchanged);
++s.pity[1]=69;assert.equal(G.Gacha.pull(s,1)[0].rarity,5);assert.equal(s.pity[1],0);
++const guarantee=G.Gacha.pull(s,10);assert.ok(guarantee.some(x=>x.rarity>=4));
++checks.push('epic/common refunds, invalid draws cannot spend, existing 70-pull and ten-pull guarantees');
++
++const target=G.DEX.find(p=>p.rarity===5&&G.SPRITE_META[p.dex]&&!s.owned[p.dex]);
++s.resonance.essence=119;assert.equal(R.exchange(s,target.dex),null);
++s.resonance.essence=120;const tickets=JSON.stringify(s.tickets),pity=JSON.stringify(s.pity),coins=s.coins;
++assert.equal(R.exchange(s,target.dex).kind,'recruit');assert.equal(s.resonance.essence,0);assert.equal(R.rank(s,target.dex),0);
++assert.equal(s.owned[target.dex].from,'resonance');assert.equal(s.shiny[target.dex],undefined);
++s.resonance.essence=36;assert.equal(R.exchange(s,target.dex).next,1);assert.equal(R.exchange(s,target.dex),null);
++s.resonance.ranks[target.dex]=5;s.resonance.essence=999;assert.equal(R.exchange(s,target.dex),null);assert.equal(s.resonance.essence,999);
++assert.equal(JSON.stringify(s.tickets),tickets);assert.equal(JSON.stringify(s.pity),pity);assert.equal(s.coins,coins);
++checks.push('targeted recruit/grow spends exact essence, no overspend, capped purchase or gacha feedback loop');
++
++s.partner=target.dex;const base=G.DEX_BY[target.dex];
++const boosted=new G.Player(base,{hp:20,atkMul:1.3});
++assert.equal(boosted.maxHp,Math.round((base.hp+20)*1.15));assert.equal(boosted.hp,boosted.maxHp);
++assert.equal(boosted.atk,base.atk*1.2*1.3);assert.equal(boosted.cdMul,.95);assert.equal(boosted.spdMul,1.05);
++const guardian=new G.Player(base,{},false,false);assert.equal(guardian.baseAtk,base.atk);assert.equal(guardian.maxHp,base.hp);
++const noRank=new G.Player(G.DEX_BY[common.dex]);assert.equal(noRank.baseAtk,G.DEX_BY[common.dex].atk);
++checks.push('actual Player receives combat bonuses; guardian actor avoids applying owner growth twice');
++
++G.DB.commit(true);const backup=G.DB.exportSave();const loaded=G.DB.parseBackup(backup);
++assert.equal(loaded.resonance.ranks[target.dex],5);assert.equal(loaded.resonance.essence,999);
++G.DB.importSave(backup);assert.equal(G.DB.save.resonance.essence,999);
++load('core/db');await G.DB.ready();assert.equal(G.DB.save.resonance.ranks[target.dex],5);assert.equal(G.DB.save.resonance.essence,999);
++const legacy=JSON.parse(backup);delete legacy.save.resonance;
++const migrated=G.DB.parseBackup(JSON.stringify(legacy));assert.equal(migrated.resonance.essence,0);assert.equal(Object.keys(migrated.resonance.ranks).length,0);
++assert.equal(migrated.coins,legacy.save.coins);assert.equal(migrated.partner,legacy.save.partner);
++for (const bad of [{ranks:{[target.dex]:6},essence:0},{ranks:{},essence:-1},{ranks:{},essence:1.5},{ranks:[],essence:0}]) {
++  const doc=JSON.parse(backup);doc.save.resonance=bad;const before=G.DB.exportSave();
++  assert.throws(()=>G.DB.importSave(JSON.stringify(doc)));assert.equal(G.DB.exportSave().split('"save":')[1],before.split('"save":')[1]);
++}
++const newer=JSON.parse(backup).save,older=JSON.parse(backup).save;
++newer.updated=2;older.updated=1;newer.resonance.essence=0;older.resonance.essence=99;
++older.resonance.ranks[dex]=5;newer.resonance.ranks[dex]=1;
++const merged=G.DB.merge(newer,older);assert.equal(merged.resonance.essence,0);assert.equal(merged.resonance.ranks[dex],5);
++assert.equal(JSON.stringify(G.DB.merge(merged,older)),JSON.stringify(merged));
++checks.push('reload/export/import, old-save migration, malformed rejection and idempotent merge without restoring spent essence');
++
++for (const dex of [172,25,26,232,220,221,473,467]) {
++  assert.ok(G.DEX_BY[dex]&&G.SPRITE_META[dex]);
++  for (const animation of ['Idle','Walk','Shoot','Hurt','Faint']) assert.ok(fs.existsSync(path.join(root,'assets/pokemon',String(dex),animation+'.png')),`${dex}/${animation}`);
++}
++checks.push('both new evolution families and pursuers have local animation assets');
++console.log(JSON.stringify({ok:true,checks,networkRequests:0,limitation:'VM mechanics and source assets, not browser/touch or live saves'},null,2));
+diff --git a/tools/measure-guardians.mjs b/tools/measure-guardians.mjs
+new file mode 100644
+index 0000000..65a17aa
+--- /dev/null
++++ b/tools/measure-guardians.mjs
+@@ -0,0 +1,50 @@
++// Deterministic collision benchmark, not a win-rate or player telemetry claim.
++// Real guardian, move, projectile and hit code; stationary neutral dummies,
++// open arena, fixed owner attack 1, no upgrades / DoT ticks / knockback movement.
++import fs from 'node:fs';
++import path from 'node:path';
++import vm from 'node:vm';
++import { fileURLToPath } from 'node:url';
++const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
++const noop = () => {};
++let enemies = [], seed = 147;
++const math = Object.create(Math);
++math.random = () => ((seed = (seed * 1664525 + 1013904223) >>> 0) / 4294967296);
++const G = { SOLO: true, T: s => s,
++  Sprites: { Animator: class { update() {} loop() {} play() {} }, bodyRadius: () => 12, bodyHeight: () => 24, hasShiny: () => false, dirFromAngle: () => 0, preload: noop },
++  FX: new Proxy({}, { get: () => noop }), Audio: { sfx: noop },
++  Path: { dirFor: () => null }, GuardianSteering: { advance: () => 0 },
++  World: { isWall: () => false, isFree: () => true, projectileBlock: () => false, isLiquid: () => false, propsInCircle: () => [] },
++  Weather: { speedFor: () => 1, mult: () => 1 }, Camera: { kick: noop, sees: () => true },
++  Coop: { active: false }, Rift: { inArena: false }, VFX: { forMove: () => ({}) },
++  EnemyMgr: { all: () => enemies, queryCircle: (x,y,r) => enemies.filter(e => !e.dead && Math.hypot(e.x-x,e.y-y) <= r+e.r), bossAlive: () => true },
++  Spawner: { say: noop }, DB: { upgradesOf: () => ({}) }, Game: { state: 'playing' }
++};
++const ctx = vm.createContext({ G, window: { G }, Math: math, performance: { now: () => 1000 }, console });
++for (const name of ['core/util', 'data/pokedex', 'data/types', 'data/moves', 'data/upgrades', 'entities/player', 'entities/projectile', 'systems/combat', 'systems/guardian'])
++  vm.runInContext(fs.readFileSync(path.join(root, 'js', name+'.js'), 'utf8'), ctx, { filename: name });
++const scenarios = {
++  near: [[100,0]], edge: [[180,0]], far: [[250,0]],
++  fan: [[110,-50],[125,-25],[130,0],[125,25],[110,50]],
++  row: [[100,0],[140,0],[180,0],[220,0],[260,0]]
++};
++const results = [];
++for (const line of G.Guardian.LINES) {
++  const row = { id: line.id, matureSeconds: line.times.at(-1) };
++  for (const [scenario, points] of Object.entries(scenarios)) {
++    seed = 147; enemies = []; G.Projectiles.clear();
++    const p = new G.Player(G.DEX_BY[4]); p.baseAtk = 1; G.Game.player = p;
++    G.Guardian.start({ mode: 'guardian' }); G.Guardian.state.opened = true; G.Guardian.recruit(line.id,p);
++    for (const t of line.times) { G.Guardian.state.growth = t; G.Guardian.update(.001,p); }
++    const pet = G.Guardian.state.pet; pet.x = 0; pet.y = 0;
++    G.Guardian.state.grace = 999; G.Guardian.state.attackCd = 0; G.Guardian.state.specialCd = 10;
++    enemies = points.map(([x,y],i) => ({ id:i+1, x,y,r:12,bodyH:24,types:['normal'],hp:1e9,dmg:0,damage:0,
++      cy() { return this.y; }, hurt(d) { this.damage+=d; this.hp-=d; }, applyBurn:noop,applyPoison:noop,applySlow:noop }));
++    for (let frame=0;frame<1800;frame++) {
++      G.Guardian.update(1/60,p); G.Projectiles.update(1/60,p,enemies); G.Combat.resolve(1/60,p,frame/60);
++    }
++    row[scenario] = Math.round(enemies.reduce((sum,e)=>sum+e.damage,0)/30*10)/10;
++  }
++  results.push(row);
++}
++console.log(JSON.stringify({ scenario: '30 s direct DPS; 60 Hz; attack 1; normal-type stationary dummies; no DoT ticks, movement or incoming damage', results },null,2));
+diff --git a/tools/zh-Hant-ui.json b/tools/zh-Hant-ui.json
+index 6ae6c76..09cb5d1 100644
+--- a/tools/zh-Hant-ui.json
++++ b/tools/zh-Hant-ui.json
+@@ -1478,7 +1478,7 @@
+   "Pulls without a legendary in {x}: {x} / {x}": "{x} 招募未出傳說次數：{x}／{x}",
+   "· After {x} pulls without a Legendary on a banner, the next one is.": "· 同一地區連續 {x} 次未出傳說，下次必定獲得。",
+   "· The ×10 pull guarantees at least one Epic.": "· 十連抽至少保證一隻史詩寶可夢。",
+-  "· Duplicates give PokéCoins (shiny duplicates, triple).": "· 重複夥伴轉換為金幣，重複異色可得三倍。",
++  "· Duplicates give PokéCoins (shiny duplicates, triple).": "· 重複夥伴保留金幣回饋；史詩／傳說另提升共鳴並累積精華。",
+   "· Tickets are earned by playing: some Pokémon drop them when defeated, and bosses and rift legendaries give ×10 tickets.": "· 抽獎券由冒險取得；部分敵人會掉落，首領與裂隙傳說可提供十連抽券。",
+   "Pull ×1 ·": "招募一次 ·",
+   "Pull ×10 ·": "招募十次 ·",
